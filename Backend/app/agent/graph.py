@@ -16,6 +16,11 @@ def route_after_validation(state: AgentState) -> str:
     if state.get("is_valid_sql"):
         return "execute_sql"
     
+    error_trace = state.get("error_trace") or ""
+    # Hard stop on security violations - never self-correct destructive operations
+    if "SECURITY ERROR" in error_trace or "Forbidden" in error_trace or "FORBIDDEN" in error_trace:
+        return "end"
+
     retry_count = state.get("retry_count", 0)
     max_retries = state.get("max_retries", 3)
     

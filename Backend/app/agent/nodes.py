@@ -1,46 +1,52 @@
 import json
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
-from app.config import settings
+from app.core.config import settings
 from app.agent.state import AgentState
-from app.db.schema_inspector import get_database_schema
-from app.db.session import get_db_connection
+from app.core.schema_rag import get_relevant_schema
+from app.core.db_factory import get_db_connection as factory_get_db_connection
 from app.security.ast_guard import validate_read_only_sql
 
-llm = ChatGroq(
-    groq_api_key=settings.GROQ_API_KEY,
-    model_name=settings.MODEL_NAME,
-    temperature=0.0  
-)
+def get_llm():
+    """Returns ChatGroq instance with current model configuration."""
+    return ChatGroq(
+        groq_api_key=settings.GROQ_API_KEY,
+        model_name=settings.MODEL_NAME,
+        temperature=0.0  
+    )
 
 def generate_sql_node(state: AgentState) -> dict:
     """
-    Description: Synthesizes a PostgreSQL SELECT query based on user question and DB schema,
+    Description: Synthesizes a SQL SELECT query based on user question and Schema-RAG retrieved context,
                  plus a 1-sentence breakdown explaining the SQL logic.
     Usecase: Initial step to convert text into structured JSON containing SQL + Explanation.
     """
     db_config = state.get("db_config")
-    schema = get_database_schema(db_config)
+    schema = get_relevant_schema(state["question"], db_config=db_config, top_k=3)
     
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are an expert PostgreSQL Data Engineer. 
-Your task is to convert natural language business questions into valid PostgreSQL SELECT queries AND provide a brief 1-sentence breakdown explaining which tables/conditions you used.
+        ("system", """You are an expert Data Engineer and Multilingual Database Assistant. 
+Your task is to convert natural language business questions into valid SQL SELECT queries AND provide a brief 1-sentence breakdown explaining which tables/conditions you used.
+
+MULTILINGUAL SUPPORT (CRITICAL):
+- The user question can be in ENGLISH, GUJARATI (ગુજરાતી or Roman Gujarati/Gujlish e.g. 'ketla users che', 'ketlu revenue thavu', 'aama ketla records che'), or HINDI (हिंदी or Roman Hindi/Hinglish e.g. 'kitne users hain', 'kul kitna revenue hua', 'sabse mehanga product').
+- Comprehend the intent in ANY of these 3 languages (or mixed code-switched scripts) and map words accurately to the database schema.
 
 CRITICAL RULES:
 1. Output MUST be a valid JSON object with keys: "sql_query" and "sql_explanation".
 2. DO NOT include markdown formatting like ```json or explanations outside the JSON structure.
 3. STRICT SECURITY & SCHEMA RULES: 
    - You MUST ONLY generate read-only SELECT queries using tables and columns present in the schema below.
-   - If the user asks to modify, update, insert, delete, drop, or truncate data, set "sql_query" to "FORBIDDEN_SECURITY_ERROR" and "sql_explanation" to "Destructive database operations are strictly forbidden."
+   - If the user asks to modify, update, insert, delete, drop, or truncate data (in English, Gujarati, or Hindi), set "sql_query" to "FORBIDDEN_SECURITY_ERROR" and "sql_explanation" to "Destructive database operations are strictly forbidden."
    - If the user asks about tables or columns that DO NOT exist in the provided schema, set "sql_query" to "FORBIDDEN_SCHEMA_ERROR" and "sql_explanation" to "The requested tables or columns do not exist in the connected database schema."
-4. Use valid PostgreSQL table and column names as specified in the schema below.
+4. Use valid table and column names as specified in the schema below.
 
 DATABASE SCHEMA:
 {schema}"""),
         ("human", "Question: {question}")
     ])
 
-    chain = prompt | llm
+    chain = prompt | get_llm()
     try:
         response = chain.invoke({"schema": schema, "question": state["question"]})
         clean_res = response.content.strip()
@@ -56,15 +62,15 @@ DATABASE SCHEMA:
         return {
             "schema": schema,
             "sql_query": parsed.get("sql_query", "").strip(),
-            "explanation": parsed.get("sql_explanation", "Executed PostgreSQL SELECT query."),
+            "explanation": parsed.get("sql_explanation", "Executed SELECT query."),
             "retry_count": 0
         }
     except Exception:
-        raw_output = response.content.strip()
+        raw_output = getattr(response, "content", "").strip() if 'response' in locals() else ""
         return {
             "schema": schema,
             "sql_query": raw_output,
-            "explanation": "Synthesized PostgreSQL SELECT query.",
+            "explanation": "Synthesized SELECT query.",
             "retry_count": 0
         }
 
@@ -89,7 +95,9 @@ def validate_sql_node(state: AgentState) -> dict:
             "error_trace": f"SECURITY ERROR: {explanation if explanation else 'Destructive operations are strictly forbidden.'}"
         }
 
-    is_valid, result = validate_read_only_sql(sql)
+    db_config = state.get("db_config")
+    _, dialect = factory_get_db_connection(db_config)
+    is_valid, result = validate_read_only_sql(sql, dialect=dialect)
     
     if is_valid:
         return {
@@ -100,17 +108,18 @@ def validate_sql_node(state: AgentState) -> dict:
     else:
         return {
             "is_valid_sql": False,
+            "sql_query": "FORBIDDEN",
             "error_trace": result
         }
 
 def execute_sql_node(state: AgentState) -> dict:
     """
-    Description: Executes validated SQL query against PostgreSQL database (local or dynamic tenant DB).
-    Usecase: Retrieves data rows or catches PostgreSQL runtime database errors.
+    Description: Executes validated SQL query against target database (SQLite or PostgreSQL).
+    Usecase: Retrieves data rows or catches database runtime errors.
     """
     try:
         db_config = state.get("db_config")
-        conn = get_db_connection(db_config)
+        conn, dialect = factory_get_db_connection(db_config)
         cursor = conn.cursor()
         cursor.execute(state["sql_query"])
         rows = cursor.fetchall()
@@ -126,7 +135,7 @@ def execute_sql_node(state: AgentState) -> dict:
     except Exception as e:
         return {
             "query_result": None,
-            "error_trace": f"PostgreSQL Execution Error: {str(e)}"
+            "error_trace": f"Database Execution Error: {str(e)}"
         }
 
 def self_correct_node(state: AgentState) -> dict:
@@ -137,8 +146,11 @@ def self_correct_node(state: AgentState) -> dict:
     current_retry = state.get("retry_count", 0) + 1
     
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are an expert PostgreSQL Data Engineer. 
+        ("system", """You are an expert Data Engineer and Multilingual Database Assistant. 
 Your previous SQL query failed validation or execution. Fix the error and generate a valid SELECT query.
+
+MULTILINGUAL CAPABILITY:
+- Understand user questions in English, Gujarati (ગુજરાતી / Gujlish), and Hindi (हिंदी / Hinglish).
 
 CRITICAL RULES:
 1. Return ONLY the raw executable SQL query.
@@ -155,7 +167,7 @@ Error Message: {error_trace}
 Corrected SQL Query:""")
     ])
 
-    chain = prompt | llm
+    chain = prompt | get_llm()
     response = chain.invoke({
         "schema": state["schema"],
         "question": state["question"],
@@ -188,13 +200,13 @@ Analyze the provided query results and user question, then output a JSON object 
    - Use 'line' for time-series / date trends.
    - Use 'pie' for proportional breakdown of a whole (under 6 items).
    - Use 'table' for multi-column details or text-dense outputs.
-2. "explanation": A concise 1-2 sentence business insight derived from the data.
+2. "explanation": A concise 1-2 sentence business insight derived from the data. Write the explanation in English or the same language/script as the user question.
 
 Return ONLY raw JSON in this format: {{"chart_type": "...", "explanation": "..."}}"""),
         ("human", "Question: {question}\nData Sample: {data_sample}")
     ])
 
-    chain = prompt | llm
+    chain = prompt | get_llm()
     try:
         response = chain.invoke({
             "question": state["question"],

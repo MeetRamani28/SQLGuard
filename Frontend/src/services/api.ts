@@ -3,6 +3,8 @@ import type {
   DbConfig,
   QueryRequestPayload,
   QueryResponseData,
+  SchemaResponseData,
+  TestDbResponse,
 } from "../types";
 
 const API_BASE_URL =
@@ -38,8 +40,54 @@ export const submitAnalyticsQuery = async (
         { cause: error },
       );
     }
-    throw new Error("Network error: Unable to reach Query-Sense API backend.", {
+    throw new Error("Network error: Unable to reach SQLGuard API backend.", {
       cause: error,
     });
+  }
+};
+
+export const testDbConnection = async (
+  dbConfig: DbConfig,
+): Promise<TestDbResponse> => {
+  try {
+    const response = await apiClient.post<TestDbResponse>(
+      "/api/v1/test-db",
+      dbConfig,
+    );
+    return response.data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (axios.isAxiosError(error) && error.response) {
+      return {
+        success: false,
+        dialect: "unknown",
+        message: error.response.data?.detail || "Connection test failed",
+      };
+    }
+    return {
+      success: false,
+      dialect: "unknown",
+      message: "Network error: Unable to reach SQLGuard backend.",
+    };
+  }
+};
+
+export const fetchDatabaseSchema = async (
+  dbConfig?: DbConfig | null,
+): Promise<SchemaResponseData> => {
+  try {
+    const response = await apiClient.post<SchemaResponseData>("/api/v1/schema", {
+      db_config: dbConfig || null,
+    });
+    return response.data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    return {
+      success: false,
+      dialect: "unknown",
+      tables: [],
+      raw_schema: "",
+      error: error.message || "Failed to retrieve schema information.",
+    };
   }
 };
