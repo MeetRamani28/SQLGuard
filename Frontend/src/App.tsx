@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, lazy, Suspense } from "react";
 import {
   Database,
   Cpu,
@@ -17,13 +17,27 @@ import {
   Globe,
   Table as TableIcon,
   XCircle,
+  Layers,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "sonner";
 import { ChatProvider, useChat } from "./context/ChatContext";
 import { QueryResponseCard } from "./components/QueryResponseCard";
-import { ConnectDbModal } from "./components/ConnectDbModal";
-import { SchemaExplorerModal } from "./components/SchemaExplorerModal";
+import { Database3DCanvas } from "./components/Database3DCanvas";
+import { SkeletonLoader } from "./components/SkeletonLoader";
+
+// Code splitting with React.lazy
+const ConnectDbModal = lazy(() =>
+  import("./components/ConnectDbModal").then((m) => ({
+    default: m.ConnectDbModal,
+  }))
+);
+
+const SchemaExplorerModal = lazy(() =>
+  import("./components/SchemaExplorerModal").then((m) => ({
+    default: m.SchemaExplorerModal,
+  }))
+);
 
 const SAMPLE_QUESTIONS = [
   "how many data vechana che",
@@ -134,8 +148,8 @@ const MainAppContent: React.FC = () => {
               <h1 className="text-lg font-black bg-gradient-to-r from-sky-400 via-indigo-300 to-cyan-300 bg-clip-text text-transparent tracking-tight">
                 SQLGuard
               </h1>
-              <span className="text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full font-semibold">
-                Dev Mode
+              <span className="text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                <Layers className="w-2.5 h-2.5" /> Dual-Env Ready
               </span>
             </div>
             <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
@@ -168,7 +182,7 @@ const MainAppContent: React.FC = () => {
             {dbConfig && (
               <button
                 onClick={disconnectDb}
-                title="Disconnect Custom DB"
+                title="Reset to Default Demo DB"
                 className="text-slate-400 hover:text-rose-400 p-1 cursor-pointer transition-colors"
               >
                 <XCircle className="w-4 h-4" />
@@ -188,23 +202,31 @@ const MainAppContent: React.FC = () => {
         </div>
       </header>
 
-      {/* Connection Manager Modal */}
-      <ConnectDbModal
-        isOpen={isDbModalOpen}
-        onClose={() => setIsDbModalOpen(false)}
-        onSave={saveDbConfig}
-        currentConfig={dbConfig}
-      />
+      {/* Lazy Loaded Connection Manager Modal */}
+      <Suspense fallback={null}>
+        {isDbModalOpen && (
+          <ConnectDbModal
+            isOpen={isDbModalOpen}
+            onClose={() => setIsDbModalOpen(false)}
+            onSave={saveDbConfig}
+            currentConfig={dbConfig}
+          />
+        )}
+      </Suspense>
 
-      {/* Schema Explorer Modal */}
-      <SchemaExplorerModal
-        isOpen={isSchemaModalOpen}
-        onClose={() => setIsSchemaModalOpen(false)}
-        dbConfig={dbConfig}
-      />
+      {/* Lazy Loaded Schema Explorer Modal */}
+      <Suspense fallback={null}>
+        {isSchemaModalOpen && (
+          <SchemaExplorerModal
+            isOpen={isSchemaModalOpen}
+            onClose={() => setIsSchemaModalOpen(false)}
+            dbConfig={dbConfig}
+          />
+        )}
+      </Suspense>
 
       {/* Main Body (Fixed Height calc(100vh - 4rem)) */}
-      <div className="flex-1 h-[calc(100vh-4rem)] flex overflow-hidden">
+      <div className="flex-1 h-[calc(100vh-4rem)] flex overflow-hidden relative">
         {/* Sidebar Container */}
         <AnimatePresence mode="wait">
           {isSidebarOpen && (
@@ -331,49 +353,54 @@ const MainAppContent: React.FC = () => {
         </AnimatePresence>
 
         {/* Main Conversation Stream Viewport */}
-        <main className="flex-1 h-full flex flex-col min-w-0 overflow-hidden bg-[#090d16]">
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar">
+        <main className="flex-1 h-full flex flex-col min-w-0 overflow-hidden bg-[#090d16] relative z-10">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar relative">
             {messages.length === 0 ? (
-              <motion.section
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="max-w-3xl mx-auto my-auto text-center space-y-6 pt-10"
-              >
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-medium">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>{activeSession?.title || "Analytics Workspace"}</span>
-                </div>
+              <div className="relative min-h-[70vh] flex flex-col items-center justify-center">
+                {/* Ambient 3D Particle Canvas */}
+                <Database3DCanvas />
 
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-100">
-                  Ask Questions in Natural Language, Get{" "}
-                  <span className="bg-gradient-to-r from-sky-400 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">
-                    Instant Unified Insights
-                  </span>
-                </h2>
-
-                <p className="text-slate-400 text-sm max-w-xl mx-auto leading-relaxed">
-                  Translates English, Gujarati (ગુજરાતી), and Hindi (हिंदी) mixed queries into read-only SQL, validates AST security rules, and renders dynamic unified visualizations.
-                </p>
-
-                {/* Sample Prompt Pills */}
-                <div className="pt-4 space-y-3">
-                  <span className="text-xs text-slate-500 font-semibold tracking-wider uppercase block">
-                    Multilingual Sample Queries to try out:
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-2xl mx-auto">
-                    {SAMPLE_QUESTIONS.map((q, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSampleClick(q)}
-                        className="text-left text-xs bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800/80 hover:border-sky-500/40 text-slate-300 p-3 rounded-xl transition-all cursor-pointer flex items-center justify-between group shadow-sm"
-                      >
-                        <span className="line-clamp-2">{q}</span>
-                        <Sparkles className="w-3.5 h-3.5 text-sky-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2" />
-                      </button>
-                    ))}
+                <motion.section
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="max-w-3xl mx-auto my-auto text-center space-y-6 pt-6 relative z-10"
+                >
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-medium">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{activeSession?.title || "Analytics Workspace"}</span>
                   </div>
-                </div>
-              </motion.section>
+
+                  <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-100">
+                    Ask Questions in Natural Language, Get{" "}
+                    <span className="bg-gradient-to-r from-sky-400 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">
+                      Instant Unified Insights
+                    </span>
+                  </h2>
+
+                  <p className="text-slate-400 text-sm max-w-xl mx-auto leading-relaxed">
+                    Translates English, Gujarati (ગુજરાતી), and Hindi (हिंदी) mixed queries into read-only SQL, validates AST security rules, and renders dynamic unified visualizations.
+                  </p>
+
+                  {/* Sample Prompt Pills */}
+                  <div className="pt-4 space-y-3">
+                    <span className="text-xs text-slate-500 font-semibold tracking-wider uppercase block">
+                      Multilingual Sample Queries to try out:
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-2xl mx-auto">
+                      {SAMPLE_QUESTIONS.map((q, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => handleSampleClick(q)}
+                          className="text-left text-xs bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800/80 hover:border-sky-500/40 text-slate-300 p-3 rounded-xl transition-all cursor-pointer flex items-center justify-between group shadow-sm backdrop-blur-sm"
+                        >
+                          <span className="line-clamp-2">{q}</span>
+                          <Sparkles className="w-3.5 h-3.5 text-sky-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.section>
+              </div>
             ) : (
               <div className="max-w-4xl mx-auto space-y-6">
                 <AnimatePresence initial={false}>
@@ -430,21 +457,16 @@ const MainAppContent: React.FC = () => {
                   ))}
                 </AnimatePresence>
 
-                {/* Processing Spinner Indicator */}
+                {/* Animated Skeleton Loading State */}
                 {loading && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-3 p-4 bg-slate-900/60 border border-slate-800 rounded-xl text-xs text-sky-400 max-w-md shadow-lg"
-                  >
-                    <RefreshCw className="w-4 h-4 animate-spin text-sky-400 shrink-0" />
-                    <div className="space-y-0.5">
-                      <span className="font-semibold block">Synthesizing & Validating Multilingual SQL...</span>
-                      <span className="text-[11px] text-slate-400">
-                        Inspecting schema AST rules & executing query
-                      </span>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center text-white shrink-0 shadow-lg mt-1">
+                      <Bot className="w-4 h-4" />
                     </div>
-                  </motion.div>
+                    <div className="flex-1 min-w-0">
+                      <SkeletonLoader />
+                    </div>
+                  </div>
                 )}
 
                 <div ref={chatEndRef} />
@@ -453,7 +475,7 @@ const MainAppContent: React.FC = () => {
           </div>
 
           {/* Fixed Bottom Input Bar */}
-          <div className="border-t border-slate-800/80 bg-slate-900/90 backdrop-blur-md p-4 shrink-0 shadow-2xl">
+          <div className="border-t border-slate-800/80 bg-slate-900/90 backdrop-blur-md p-4 shrink-0 shadow-2xl relative z-20">
             <div className="max-w-4xl mx-auto">
               <form onSubmit={handleFormSubmit} className="relative">
                 <div className="flex items-center bg-slate-950 border border-slate-800 focus-within:border-sky-500 rounded-2xl p-2 shadow-2xl transition-all">

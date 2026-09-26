@@ -11,6 +11,7 @@ import {
   Bookmark,
   Plus,
   Trash2,
+  RotateCcw,
 } from "lucide-react";
 import type { DbConfig, SavedDbPreset } from "../types";
 import { testDbConnection } from "../services/api";
@@ -146,6 +147,16 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
     onClose();
   };
 
+  const handleResetToDemo = () => {
+    onSave({
+      preset_name: "Demo E-Commerce DB",
+      db_type: "sqlite",
+      sqlite_path: "sqlguard_dev.db",
+    });
+    toast.success("Switched to Default Demo E-Commerce Database!");
+    onClose();
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const payload = getFormPayload();
@@ -162,12 +173,23 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
             <Database className="w-5 h-5" />
             <span>Database Connection Manager</span>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white cursor-pointer transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleResetToDemo}
+              className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-sky-300 border border-sky-500/30 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+              title="Reset to built-in Demo E-Commerce DB"
+            >
+              <RotateCcw className="w-3 h-3 text-sky-400" />
+              <span>Use Demo DB</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-white cursor-pointer transition-colors p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Navigation Tabs */}
