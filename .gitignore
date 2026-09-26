@@ -32,3 +32,4 @@ Backend/EVALS.md
 # Secrets
 .env
 Backend/.env
+Frontend/.env

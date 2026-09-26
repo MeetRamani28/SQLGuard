@@ -11,6 +11,9 @@ interface ChatContextType {
   loading: boolean;
   dbConfig: DbConfig | null;
   history: QueryResponseData[];
+  userId: string;
+  userEmail: string;
+  userName: string;
   createNewSession: () => string;
   switchSession: (id: string) => void;
   renameSession: (id: string, newTitle: string) => void;
@@ -34,9 +37,18 @@ const createDefaultSession = (): ChatSession => ({
   messages: [],
 });
 
-export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ChatProvider: React.FC<{
+  children: React.ReactNode;
+  userContext?: { userId: string; userEmail: string; userName: string };
+}> = ({ children, userContext }) => {
+  const userId = userContext?.userId || "default_user";
+  const userEmail = userContext?.userEmail || "engineer@sqlguard.io";
+  const userName = userContext?.userName || "Senior AI Engineer";
+
+  const storagePrefix = `qs_user_${userId}`;
+
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    const saved = localStorage.getItem("qs_chat_sessions");
+    const saved = localStorage.getItem(`${storagePrefix}_sessions`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -50,44 +62,69 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [activeSessionId, setActiveSessionId] = useState<string>(() => {
-    const savedId = localStorage.getItem("qs_active_session_id");
+    const savedId = localStorage.getItem(`${storagePrefix}_active_session`);
     if (savedId && sessions.some((s) => s.id === savedId)) return savedId;
     return sessions[0]?.id || "";
   });
 
   const [dbConfig, setDbConfig] = useState<DbConfig | null>(() => {
-    const saved = localStorage.getItem("qs_db_config");
+    const saved = localStorage.getItem(`${storagePrefix}_db_config`);
     return saved ? JSON.parse(saved) : null;
   });
 
   const [history, setHistory] = useState<QueryResponseData[]>(() => {
-    const saved = localStorage.getItem("qs_query_history");
+    const saved = localStorage.getItem(`${storagePrefix}_history`);
     return saved ? JSON.parse(saved) : [];
   });
 
   const [loading, setLoading] = useState(false);
 
+  // Sync state whenever user switches accounts
   useEffect(() => {
-    localStorage.setItem("qs_chat_sessions", JSON.stringify(sessions));
-  }, [sessions]);
+    const saved = localStorage.getItem(`${storagePrefix}_sessions`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSessions(parsed);
+          const savedActive = localStorage.getItem(`${storagePrefix}_active_session`);
+          if (savedActive && parsed.some((s: ChatSession) => s.id === savedActive)) {
+            setActiveSessionId(savedActive);
+          } else {
+            setActiveSessionId(parsed[0].id);
+          }
+        }
+      } catch {
+        // fallback
+      }
+    } else {
+      const fresh = createDefaultSession();
+      setSessions([fresh]);
+      setActiveSessionId(fresh.id);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    localStorage.setItem(`${storagePrefix}_sessions`, JSON.stringify(sessions));
+  }, [sessions, storagePrefix]);
 
   useEffect(() => {
     if (activeSessionId) {
-      localStorage.setItem("qs_active_session_id", activeSessionId);
+      localStorage.setItem(`${storagePrefix}_active_session`, activeSessionId);
     }
-  }, [activeSessionId]);
+  }, [activeSessionId, storagePrefix]);
 
   useEffect(() => {
     if (dbConfig) {
-      localStorage.setItem("qs_db_config", JSON.stringify(dbConfig));
+      localStorage.setItem(`${storagePrefix}_db_config`, JSON.stringify(dbConfig));
     } else {
-      localStorage.removeItem("qs_db_config");
+      localStorage.removeItem(`${storagePrefix}_db_config`);
     }
-  }, [dbConfig]);
+  }, [dbConfig, storagePrefix]);
 
   useEffect(() => {
-    localStorage.setItem("qs_query_history", JSON.stringify(history));
-  }, [history]);
+    localStorage.setItem(`${storagePrefix}_history`, JSON.stringify(history));
+  }, [history, storagePrefix]);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
   const messages = activeSession?.messages || [];
@@ -161,7 +198,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timestamp,
     };
 
-    // Auto rename session title if it's default
     const shouldAutoRename = currentSess.title === "New Analytics Chat" || currentSess.messages.length === 0;
     const autoTitle = question.length > 30 ? question.slice(0, 30) + "..." : question;
 
@@ -308,7 +344,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearHistory = () => {
     setHistory([]);
-    localStorage.removeItem("qs_query_history");
+    localStorage.removeItem(`${storagePrefix}_history`);
     toast.info("Query history cleared.");
   };
 
@@ -322,6 +358,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         dbConfig,
         history,
+        userId,
+        userEmail,
+        userName,
         createNewSession,
         switchSession,
         renameSession,
