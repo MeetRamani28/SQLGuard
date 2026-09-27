@@ -7,14 +7,12 @@ import {
   MessageSquare,
   Trash2,
   User,
-  Bot,
   Terminal,
   Plus,
   Edit2,
   Check,
   Table as TableIcon,
   XCircle,
-  Layers,
   Menu,
   ChevronsLeft,
   X,
@@ -25,14 +23,14 @@ import {
   Bookmark,
   Mic,
   Network,
-  Clock,
-  Keyboard,
+  History,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "sonner";
 import { ChatProvider, useChat } from "./context/ChatContext";
 import { QueryResponseCard } from "./components/QueryResponseCard";
 import { Database3DCanvas } from "./components/Database3DCanvas";
+import { SQLGuard3DLogo } from "./components/SQLGuard3DLogo";
 import { SkeletonLoader } from "./components/SkeletonLoader";
 import { AuthGateway, UserButton } from "./components/AuthGateway";
 import { SavedQueriesModal } from "./components/SavedQueriesModal";
@@ -42,6 +40,8 @@ import { QueryScheduleModal } from "./components/QueryScheduleModal";
 import { CommandPaletteModal } from "./components/CommandPaletteModal";
 import { QueryCompareModal } from "./components/QueryCompareModal";
 import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
+import { QueryHistoryModal } from "./components/QueryHistoryModal";
+import type { QueryResponseData } from "./types";
 
 // Code splitting with React.lazy
 const ConnectDbModal = lazy(() =>
@@ -100,6 +100,7 @@ const MainAppContent: React.FC<{
   const [isSystemHealthModalOpen, setIsSystemHealthModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isQueryHistoryModalOpen, setIsQueryHistoryModalOpen] = useState(false);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [isKeyboardModalOpen, setIsKeyboardModalOpen] = useState(false);
   const [isListeningVoice, setIsListeningVoice] = useState(false);
@@ -213,17 +214,75 @@ const MainAppContent: React.FC<{
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  const scrollToExistingOrSend = (text: string) => {
+    if (!text.trim() || loading) return;
+    const cleanText = text.trim();
+    const existingMsg = messages.find(
+      (m) => m.role === "user" && m.content?.trim().toLowerCase() === cleanText.toLowerCase()
+    );
+
+    if (existingMsg) {
+      const el = document.getElementById(`msg-${existingMsg.id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        toast.info("Redirected to existing query in workspace");
+        setQuestionInput("");
+        return;
+      }
+    }
+
+    setQuestionInput("");
+    sendMessage(cleanText);
+  };
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!questionInput.trim() || loading) return;
-    const text = questionInput;
-    setQuestionInput("");
-    sendMessage(text);
+    scrollToExistingOrSend(questionInput);
   };
 
   const handleSampleClick = (sampleText: string) => {
-    setQuestionInput(sampleText);
-    sendMessage(sampleText);
+    scrollToExistingOrSend(sampleText);
+  };
+
+  const handleSelectHistoryItem = (item: QueryResponseData) => {
+    setIsQueryHistoryModalOpen(false);
+
+    // 1. Check if question exists in current active chat session messages
+    const existingMsg = messages.find(
+      (m) => m.role === "user" && m.content?.trim().toLowerCase() === item.question.trim().toLowerCase()
+    );
+    if (existingMsg) {
+      const el = document.getElementById(`msg-${existingMsg.id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        toast.info("Redirected to existing query in workspace");
+        return;
+      }
+    }
+
+    // 2. Check if question exists in another chat session
+    const targetSession = sessions.find((s) =>
+      s.messages.some(
+        (m) => m.role === "user" && m.content?.trim().toLowerCase() === item.question.trim().toLowerCase()
+      )
+    );
+    if (targetSession) {
+      switchSession(targetSession.id);
+      toast.info(`Switched to workspace: "${targetSession.title}"`);
+      setTimeout(() => {
+        const match = targetSession.messages.find(
+          (m) => m.role === "user" && m.content?.trim().toLowerCase() === item.question.trim().toLowerCase()
+        );
+        if (match) {
+          const el = document.getElementById(`msg-${match.id}`);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 150);
+      return;
+    }
+
+    // 3. Fallback: load item into workspace
+    loadHistoryItem(item);
   };
 
   const startEditingSession = (id: string, currentTitle: string, e: React.MouseEvent) => {
@@ -252,7 +311,7 @@ const MainAppContent: React.FC<{
   };
 
   const getDbDisplayName = () => {
-    if (!dbConfig) return "Dev SQLite (sqlguard_dev.db)";
+    if (!dbConfig) return "Demo SQLite";
     if (dbConfig.preset_name) return dbConfig.preset_name;
     if (dbConfig.dbname) return `PostgreSQL: ${dbConfig.dbname}`;
     if (dbConfig.connection_url) {
@@ -274,145 +333,58 @@ const MainAppContent: React.FC<{
     <div className="h-screen w-full max-w-full flex flex-col overflow-hidden bg-[#1E293B] text-[#EEEEEE] font-sans selection:bg-[#548CA8]/30 selection:text-[#EEEEEE]">
       <Toaster position="top-right" theme="dark" richColors />
 
-      {/* Top Header Navigation (Fixed Height h-16) */}
-      <header className="h-16 border-b border-[#476072]/60 bg-[#334257]/90 backdrop-blur-md z-40 shrink-0 px-3 sm:px-4 flex items-center justify-between shadow-xl">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          {/* Professional Sidebar Toggle Icon */}
+      {/* Primary Top Header Navigation (Fixed Height h-14) */}
+      <header className="h-14 border-b border-[#476072]/60 bg-[#334257] z-40 shrink-0 px-3 sm:px-4 flex items-center justify-between shadow-xl">
+        {/* Left Branding & Sidebar Toggle */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 bg-[#1E293B] hover:bg-[#548CA8]/20 text-[#548CA8] hover:text-[#EEEEEE] rounded-xl border border-[#476072]/60 hover:border-[#548CA8]/60 cursor-pointer transition-all shrink-0 shadow-sm group"
+            className="p-1.5 bg-[#1E293B] hover:bg-[#548CA8]/20 text-[#548CA8] hover:text-[#EEEEEE] rounded-xl border border-[#476072]/60 hover:border-[#548CA8]/60 cursor-pointer transition-all shrink-0 shadow-sm group"
             title={isSidebarOpen ? "Collapse Analytics Sidebar" : "Expand Analytics Sidebar"}
           >
             {isSidebarOpen ? (
-              <ChevronsLeft className="w-4.5 h-4.5 text-[#548CA8] group-hover:text-sky-300 transition-colors" />
+              <ChevronsLeft className="w-5 h-5 text-[#548CA8] group-hover:text-sky-300 transition-colors" />
             ) : (
-              <Menu className="w-4.5 h-4.5 text-[#548CA8] group-hover:text-sky-300 transition-colors" />
+              <Menu className="w-5 h-5 text-[#548CA8] group-hover:text-sky-300 transition-colors" />
             )}
           </button>
 
-          <div className="p-2 bg-gradient-to-tr from-[#548CA8]/30 to-[#476072]/30 border border-[#548CA8]/40 rounded-xl text-[#548CA8] shadow-inner shrink-0 hidden sm:block">
-            <Database className="w-5 h-5" />
-          </div>
+          <SQLGuard3DLogo size={32} />
 
-          <div className="min-w-0 truncate">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <h1 className="text-base sm:text-lg font-black bg-gradient-to-r from-[#EEEEEE] via-sky-200 to-[#548CA8] bg-clip-text text-transparent tracking-tight truncate">
-                SQLGuard
-              </h1>
-              <span className="text-[10px] bg-[#548CA8]/15 text-[#548CA8] border border-[#548CA8]/30 px-2 py-0.5 rounded-full font-semibold hidden md:flex items-center gap-1 shrink-0">
-                <Layers className="w-2.5 h-2.5" /> Dual-Env Ready
-              </span>
-            </div>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium hidden lg:block truncate">
-              Enterprise Autonomous Text-to-SQL Engine
-            </p>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-base sm:text-lg font-black bg-gradient-to-r from-[#EEEEEE] via-sky-200 to-[#548CA8] bg-clip-text text-transparent tracking-tight truncate">
+              SQLGuard
+            </h1>
           </div>
         </div>
 
-        {/* Right Header Navigation */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          {/* Command Palette Button */}
-          <button
-            onClick={() => setIsCommandPaletteOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#476072]/60 transition-all cursor-pointer font-medium shadow-sm"
-            title="Open Command Palette (Ctrl+K)"
-          >
-            <Terminal className="w-3.5 h-3.5 text-[#548CA8]" />
-            <span className="hidden sm:inline">Commands</span>
-            <span className="hidden md:inline-block text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono border border-slate-700">
-              Ctrl K
-            </span>
-          </button>
-
-          {/* Hotkeys Reference Button */}
-          <button
-            onClick={() => setIsKeyboardModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#476072]/60 transition-all cursor-pointer font-medium shadow-sm"
-            title="Keyboard Hotkeys & Shortcuts (?)"
-          >
-            <Keyboard className="w-3.5 h-3.5 text-[#548CA8]" />
-            <span className="hidden xl:inline">Hotkeys</span>
-          </button>
-
-          {/* Live Dashboard Button */}
-          <button
-            onClick={() => setIsDashboardModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-[#548CA8] hover:text-[#EEEEEE] px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#476072]/60 transition-all cursor-pointer font-medium shadow-sm relative"
-            title="Live Pinned Analytics Dashboard"
-          >
-            <LayoutGrid className="w-3.5 h-3.5 text-[#548CA8]" />
-            <span className="hidden sm:inline">Live Dashboard</span>
-            {pinnedCards.length > 0 && (
-              <span className="text-[10px] bg-[#548CA8] text-[#EEEEEE] px-1.5 py-0.2 rounded-full font-bold">
-                {pinnedCards.length}
-              </span>
-            )}
-          </button>
-
-          {/* Saved Queries Library Button */}
-          <button
-            onClick={() => setIsSavedQueriesModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-indigo-600/20 text-indigo-400 hover:text-[#EEEEEE] px-2.5 sm:px-3 py-1.5 rounded-xl border border-indigo-500/30 transition-colors cursor-pointer font-medium shadow-sm"
-            title="Saved Query Templates & Bookmarks"
-          >
-            <Bookmark className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden sm:inline">Saved Queries</span>
-          </button>
-
-          {/* ER Diagram Button */}
-          <button
-            onClick={() => setIsErDiagramModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-cyan-600/20 text-cyan-400 hover:text-[#EEEEEE] px-2.5 sm:px-3 py-1.5 rounded-xl border border-cyan-500/30 transition-colors cursor-pointer font-medium shadow-sm"
-            title="Interactive ER Schema Diagram"
-          >
-            <Network className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden lg:inline">ER Diagram</span>
-          </button>
-
-          {/* System Health Button */}
-          <button
-            onClick={() => setIsSystemHealthModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-emerald-600/20 text-emerald-400 hover:text-[#EEEEEE] px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-500/30 transition-colors cursor-pointer font-medium shadow-sm"
-            title="System Observability & Latency SLA"
-          >
-            <Activity className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden lg:inline">Health</span>
-          </button>
-
-          {/* Scheduler Button */}
-          <button
-            onClick={() => setIsScheduleModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-purple-600/20 text-purple-400 hover:text-[#EEEEEE] px-2.5 sm:px-3 py-1.5 rounded-xl border border-purple-500/30 transition-colors cursor-pointer font-medium shadow-sm"
-            title="Automated Query Schedules"
-          >
-            <Clock className="w-3.5 h-3.5 text-purple-400" />
-            <span className="hidden lg:inline">Schedules</span>
-          </button>
-
-          {/* Schema Explorer Button */}
-          <button
-            onClick={() => setIsSchemaModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#476072] text-[#548CA8] hover:text-[#EEEEEE] px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#476072]/60 transition-colors cursor-pointer font-medium shadow-sm"
-            title="Explore Database Schema"
-          >
-            <TableIcon className="w-3.5 h-3.5 text-[#548CA8]" />
-            <span className="hidden sm:inline">Schema Explorer</span>
-          </button>
-
-          {/* Connected Database Pill */}
+        {/* Right Status Controls & User Profile */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Connected Database Pill / CTA */}
           <div className="flex items-center gap-1 bg-[#1E293B] border border-[#476072]/60 rounded-xl p-1 shadow-inner">
             <button
               onClick={() => setIsDbModalOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-[#548CA8] hover:text-[#EEEEEE] px-2 sm:px-2.5 py-1 transition-colors cursor-pointer font-medium"
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer font-semibold ${
+                dbConfig
+                  ? "bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/60 border border-emerald-700/50"
+                  : "bg-sky-500/20 text-sky-200 hover:bg-sky-500/30 border border-sky-400/50 shadow-sm"
+              }`}
+              title={dbConfig ? "Connected Database (Click to Change)" : "Click to Connect PostgreSQL or Custom Database"}
             >
-              <Database className="w-3.5 h-3.5 text-[#548CA8]" />
-              <span className="max-w-[90px] sm:max-w-[170px] truncate">{getDbDisplayName()}</span>
+              {dbConfig ? (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              ) : (
+                <Database className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+              )}
+              <span className="max-w-[130px] sm:max-w-[210px] truncate">
+                {dbConfig ? getDbDisplayName() : "+ Connect Database"}
+              </span>
             </button>
 
             {dbConfig && (
               <button
                 onClick={disconnectDb}
-                title="Reset to Default Demo DB"
+                title="Disconnect Custom DB & Reset to Demo"
                 className="text-slate-400 hover:text-rose-400 p-1 cursor-pointer transition-colors"
               >
                 <XCircle className="w-3.5 h-3.5" />
@@ -420,37 +392,117 @@ const MainAppContent: React.FC<{
             )}
           </div>
 
+          {/* AST Active Security Pill */}
           <button
             onClick={() => setIsAuditLogModalOpen(true)}
-            className="hidden lg:flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/60 px-3 py-1.5 rounded-xl border border-emerald-800/40 font-medium cursor-pointer transition-all"
+            className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/60 px-2.5 py-1 rounded-xl border border-emerald-800/40 font-medium cursor-pointer transition-all"
             title="View System Observability & AST Security Policy"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>AST Active</span>
+            <span className="hidden sm:inline">AST Active</span>
           </button>
 
-          {/* Custom Cyberpunk User Profile Dropdown */}
-          <div className="flex items-center gap-2 pl-1 border-l border-[#476072]/50">
+          {/* User Profile Dropdown */}
+          <div className="flex items-center gap-2 pl-2 border-l border-[#476072]/50 shrink-0">
             <UserButton userContext={userContext} onSignOut={handleSignOut} />
           </div>
         </div>
       </header>
 
+      {/* Secondary Tools Navigation Sub-Bar (Fixed Height h-11) */}
+      <nav className="h-11 border-b border-[#476072]/50 bg-[#1E293B]/95 backdrop-blur-md z-30 shrink-0 px-3 flex items-center justify-between overflow-x-auto custom-scrollbar shadow-inner gap-2">
+        <div className="flex items-center gap-1.5 shrink-0 min-w-max">
+          {/* Query History Popup Button */}
+          <button
+            onClick={() => setIsQueryHistoryModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-[#548CA8]/20 text-[#548CA8] hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-[#476072]/60 transition-all cursor-pointer font-medium"
+            title="Open Query History & Execution Log"
+          >
+            <History className="w-3.5 h-3.5 text-[#548CA8]" />
+            <span>Query History</span>
+            {history.length > 0 && (
+              <span className="text-[10px] bg-[#548CA8]/30 text-sky-200 px-1.5 py-0.2 rounded-full font-bold border border-[#548CA8]/40">
+                {history.length}
+              </span>
+            )}
+          </button>
+
+          <div className="h-4 w-px bg-[#476072]/60 mx-1" />
+
+          {/* Live Dashboard */}
+          <button
+            onClick={() => setIsDashboardModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-[#548CA8]/20 text-[#548CA8] hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-[#476072]/60 transition-all cursor-pointer font-medium relative"
+            title="Live Pinned Analytics Dashboard"
+          >
+            <LayoutGrid className="w-3.5 h-3.5 text-[#548CA8]" />
+            <span>Live Dashboard</span>
+            {pinnedCards.length > 0 && (
+              <span className="text-[10px] bg-[#548CA8] text-[#EEEEEE] px-1.5 py-0.2 rounded-full font-bold">
+                {pinnedCards.length}
+              </span>
+            )}
+          </button>
+
+          {/* Saved Queries */}
+          <button
+            onClick={() => setIsSavedQueriesModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-indigo-600/20 text-indigo-400 hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-indigo-500/30 transition-colors cursor-pointer font-medium"
+            title="Saved Query Templates & Bookmarks"
+          >
+            <Bookmark className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Saved Queries</span>
+          </button>
+
+          {/* ER Diagram */}
+          <button
+            onClick={() => setIsErDiagramModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-cyan-600/20 text-cyan-400 hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-cyan-500/30 transition-colors cursor-pointer font-medium"
+            title="Interactive ER Schema Diagram"
+          >
+            <Network className="w-3.5 h-3.5 text-cyan-400" />
+            <span>ER Diagram</span>
+          </button>
+
+          <div className="h-4 w-px bg-[#476072]/60 mx-1" />
+
+          {/* System Health */}
+          <button
+            onClick={() => setIsSystemHealthModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-emerald-600/20 text-emerald-400 hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-emerald-500/30 transition-colors cursor-pointer font-medium"
+            title="System Observability & Latency SLA"
+          >
+            <Activity className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Health</span>
+          </button>
+
+          {/* Schema Explorer */}
+          <button
+            onClick={() => setIsSchemaModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-[#476072] text-[#548CA8] hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-[#476072]/60 transition-colors cursor-pointer font-medium"
+            title="Explore Database Schema"
+          >
+            <TableIcon className="w-3.5 h-3.5 text-[#548CA8]" />
+            <span>Schema Explorer</span>
+          </button>
+        </div>
+      </nav>
+
       {/* LIVE DASHBOARD MODAL */}
       {isDashboardModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#1E293B] border border-[#476072] w-full max-w-5xl h-[85vh] rounded-2xl p-6 shadow-2xl flex flex-col space-y-4">
-            <div className="flex items-center justify-between border-b border-[#476072]/60 pb-3">
-              <div className="flex items-center gap-2 text-[#548CA8] font-bold text-base">
-                <LayoutGrid className="w-5 h-5 text-[#548CA8]" />
-                <span className="text-[#EEEEEE]">Live Pinned Analytics Dashboard</span>
-                <span className="text-xs bg-[#548CA8]/20 border border-[#548CA8]/40 px-2 py-0.5 rounded-full text-[#548CA8]">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-[#213448] border border-[#547792]/60 w-full max-w-6xl h-[88vh] rounded-2xl p-4 sm:p-6 shadow-2xl flex flex-col space-y-4 text-[#EEEEEE]">
+            <div className="flex items-center justify-between border-b border-[#547792]/50 pb-3">
+              <div className="flex items-center gap-2 text-sky-400 font-bold text-base">
+                <LayoutGrid className="w-5 h-5 text-sky-400" />
+                <span className="text-[#EEEEEE] font-bold">Live Pinned Analytics Dashboard</span>
+                <span className="text-xs bg-[#547792]/30 border border-[#547792]/50 px-2.5 py-0.5 rounded-full text-sky-200 font-semibold">
                   {pinnedCards.length} Pinned Metrics
                 </span>
               </div>
               <button
                 onClick={() => setIsDashboardModalOpen(false)}
-                className="text-slate-400 hover:text-white cursor-pointer"
+                className="text-slate-400 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -458,20 +510,21 @@ const MainAppContent: React.FC<{
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar">
               {pinnedCards.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center space-y-2 text-slate-400">
-                  <Pin className="w-8 h-8 text-[#548CA8] opacity-50" />
-                  <span className="text-xs">No pinned cards yet. Click "Pin" on any query result card to build your dashboard.</span>
+                <div className="h-full flex flex-col items-center justify-center space-y-3 text-slate-400 py-12">
+                  <Pin className="w-10 h-10 text-sky-400 opacity-50" />
+                  <p className="text-xs sm:text-sm font-medium">No pinned analytics cards yet.</p>
+                  <p className="text-[11px] text-slate-500">Click "Pin" on any query result card to build your executive dashboard.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                   {pinnedCards.map((pinned) => (
-                    <div key={pinned.id} className="relative group">
+                    <div key={pinned.id} className="relative group border border-[#547792]/40 rounded-2xl overflow-hidden bg-[#1E293B]/90 shadow-xl">
                       <button
                         onClick={() => unpinCard(pinned.id)}
-                        className="absolute right-3 top-3 z-10 p-1 bg-rose-950/80 text-rose-300 hover:bg-rose-900 rounded border border-rose-800/40 text-[10px] cursor-pointer"
+                        className="absolute right-3 top-3 z-20 px-2.5 py-1 bg-rose-950/90 text-rose-300 hover:bg-rose-900 rounded-lg border border-rose-800/60 text-[10px] font-semibold cursor-pointer transition-colors shadow-md"
                         title="Unpin Card"
                       >
-                        Unpin
+                        Unpin Metric
                       </button>
                       <QueryResponseCard data={pinned.data} />
                     </div>
@@ -558,8 +611,8 @@ const MainAppContent: React.FC<{
         )}
       </Suspense>
 
-      {/* Main Body (Fixed Height calc(100vh - 4rem)) */}
-      <div className="flex-1 h-[calc(100vh-4rem)] flex overflow-hidden relative">
+      {/* Main Body (Fixed Height calc(100vh - 6.25rem)) */}
+      <div className="flex-1 h-[calc(100vh-6.25rem)] flex overflow-hidden relative">
         {/* Mobile Backdrop Overlay for small screens */}
         {isSidebarOpen && (
           <div
@@ -670,38 +723,6 @@ const MainAppContent: React.FC<{
                   );
                 })}
               </div>
-
-              {/* Query History Drawer */}
-              <div className="p-3 border-t border-[#476072]/60 space-y-2 max-h-48 flex flex-col shrink-0">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-[#548CA8] uppercase tracking-wider">
-                    Query History
-                  </span>
-                  {history.length > 0 && (
-                    <button
-                      onClick={clearHistory}
-                      className="text-slate-500 hover:text-rose-400 text-[10px] cursor-pointer"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-
-                <div className="overflow-y-auto space-y-1 custom-scrollbar pr-1 flex-1">
-                  {history.slice(0, 5).map((item, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        loadHistoryItem(item);
-                        if (window.innerWidth < 768) setIsSidebarOpen(false);
-                      }}
-                      className="w-full text-left text-[11px] p-1.5 rounded-lg bg-[#1E293B]/40 hover:bg-[#1E293B] text-slate-300 hover:text-[#EEEEEE] truncate cursor-pointer transition-colors"
-                    >
-                      • {item.question}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </motion.aside>
           )}
         </AnimatePresence>
@@ -724,16 +745,9 @@ const MainAppContent: React.FC<{
                     <span>{activeSession?.title || "Analytics Workspace"}</span>
                   </div>
 
-                  <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-[#EEEEEE]">
-                    Ask Questions in Natural Language, Get{" "}
-                    <span className="bg-gradient-to-r from-[#EEEEEE] via-sky-200 to-[#548CA8] bg-clip-text text-transparent">
-                      Instant Unified Insights
-                    </span>
+                  <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#EEEEEE] max-w-2xl mx-auto leading-snug">
+                    Ask questions in natural language and {dbConfig ? getDbDisplayName() : "demo db"} is connected
                   </h2>
-
-                  <p className="text-slate-300 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">
-                    Translates English, Gujarati (ગુજરાતી), and Hindi (हिंदी) mixed queries into read-only SQL, validates AST security rules, and renders dynamic unified visualizations.
-                  </p>
 
                   {/* Sample Prompt Pills */}
                   <div className="pt-2 space-y-3">
@@ -761,11 +775,12 @@ const MainAppContent: React.FC<{
                   {messages.map((msg) => (
                     <motion.div
                       key={msg.id}
+                      id={`msg-${msg.id}`}
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="space-y-4"
+                      className="space-y-4 scroll-mt-20"
                     >
                       {/* USER MESSAGE BUBBLE - Right Aligned */}
                       {msg.role === "user" && (
@@ -788,9 +803,7 @@ const MainAppContent: React.FC<{
                       {/* ASSISTANT RESPONSE CARD - Single Unified Container */}
                       {msg.role === "assistant" && (
                         <div className="flex items-start gap-2.5 sm:gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#548CA8] to-[#476072] flex items-center justify-center text-white shrink-0 shadow-lg mt-1">
-                            <Bot className="w-4 h-4" />
-                          </div>
+                          <SQLGuard3DLogo size={28} />
 
                           <div className="flex-1 min-w-0">
                             {msg.data ? (
@@ -814,9 +827,7 @@ const MainAppContent: React.FC<{
                 {/* Animated Skeleton Loading State */}
                 {loading && (
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#548CA8] to-[#476072] flex items-center justify-center text-white shrink-0 shadow-lg mt-1">
-                      <Bot className="w-4 h-4" />
-                    </div>
+                    <SQLGuard3DLogo size={28} />
                     <div className="flex-1 min-w-0">
                       <SkeletonLoader />
                     </div>
@@ -828,12 +839,16 @@ const MainAppContent: React.FC<{
             )}
           </div>
 
-          {/* Fixed Bottom Input Bar */}
-          <div className="border-t border-[#476072]/60 bg-[#334257]/90 backdrop-blur-md p-3 sm:p-4 shrink-0 shadow-2xl relative z-20">
-            <div className="max-w-4xl mx-auto">
+          {/* Ultra-Slick Glassmorphic Bottom Input Bar */}
+          <div className="border-t border-[#476072]/50 bg-[#1E293B]/95 backdrop-blur-xl p-3 sm:p-4 shrink-0 shadow-2xl relative z-20">
+            <div className="max-w-4xl mx-auto space-y-2.5">
               <form onSubmit={handleFormSubmit} className="relative">
-                <div className="flex items-center bg-[#1E293B] border border-[#476072]/80 focus-within:border-[#548CA8] rounded-2xl p-1.5 sm:p-2 shadow-2xl transition-all">
-                  <Terminal className="w-5 h-5 text-[#548CA8] ml-2.5 shrink-0" />
+                <div className="flex items-center bg-[#0f172a]/90 border border-[#548CA8]/40 focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-400/30 rounded-2xl p-1.5 sm:p-2 shadow-2xl transition-all">
+                  <div className="flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-[#1E293B] rounded-xl border border-[#476072]/50 text-sky-400 text-xs font-semibold shrink-0">
+                    <Terminal className="w-3.5 h-3.5 text-sky-400" />
+                    <span className="hidden sm:inline font-mono">SQL</span>
+                  </div>
+
                   <input
                     type="text"
                     value={questionInput}
@@ -841,22 +856,24 @@ const MainAppContent: React.FC<{
                     placeholder="Ask any question in English, Gujarati (ગુજરાતી), or Hindi (हिंदी)..."
                     className="w-full bg-transparent border-none px-3 sm:px-4 py-2 text-xs sm:text-sm text-[#EEEEEE] placeholder-slate-400 focus:outline-none"
                   />
+
                   <button
                     type="button"
                     onClick={handleVoiceInput}
                     className={`p-2 rounded-xl text-xs transition-colors shrink-0 ${
                       isListeningVoice
-                        ? "bg-rose-600 text-white animate-pulse"
+                        ? "bg-rose-600 text-white animate-pulse shadow-lg shadow-rose-500/50"
                         : "text-[#548CA8] hover:bg-[#334257] hover:text-white"
                     }`}
                     title="Multilingual Voice Input (English, Gujarati, Hindi)"
                   >
                     <Mic className="w-4 h-4" />
                   </button>
+
                   <button
                     type="submit"
                     disabled={loading || !questionInput.trim()}
-                    className="bg-[#548CA8] hover:bg-[#476072] disabled:bg-[#1E293B] disabled:text-slate-600 text-[#EEEEEE] font-semibold px-4 sm:px-5 py-2.5 rounded-xl flex items-center gap-1.5 text-xs transition-all cursor-pointer shrink-0 shadow-lg shadow-[#548CA8]/20"
+                    className="bg-[#547792] hover:bg-[#3d5a71] disabled:bg-[#1E293B] disabled:text-slate-600 text-white font-bold px-4 sm:px-6 py-2.5 rounded-xl flex items-center gap-2 text-xs transition-all cursor-pointer shrink-0 shadow-lg shadow-[#547792]/25 border border-[#94b4c1]/30 active:scale-95"
                   >
                     {loading ? (
                       <>
@@ -872,17 +889,21 @@ const MainAppContent: React.FC<{
                   </button>
                 </div>
               </form>
+
               {/* Quick Table Suggestion Chips */}
-              <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[11px] text-slate-400">
-                <span className="font-semibold text-[#548CA8] flex items-center gap-1 text-[10px] uppercase tracking-wider">
-                  <TableIcon className="w-3 h-3 text-[#548CA8]" /> Table Chips:
+              <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-400">
+                <span className="font-semibold text-[#94b4c1] flex items-center gap-1 text-[10px] uppercase tracking-wider">
+                  <TableIcon className="w-3 h-3 text-[#94b4c1]" /> Table Chips:
                 </span>
                 {["customers", "orders", "revenue", "products", "categories", "region"].map((tbl) => (
                   <button
                     key={tbl}
                     type="button"
-                    onClick={() => setQuestionInput((prev) => (prev ? `${prev} ${tbl}` : `Show data from ${tbl}`))}
-                    className="px-2 py-0.5 rounded-lg bg-[#1E293B] border border-[#476072]/60 hover:border-[#548CA8] text-sky-300 font-mono text-[10px] cursor-pointer transition-all hover:bg-[#334257]"
+                    onClick={() => {
+                      const queryText = questionInput ? `${questionInput} ${tbl}` : `Show data from ${tbl}`;
+                      scrollToExistingOrSend(queryText);
+                    }}
+                    className="px-2.5 py-0.5 rounded-lg bg-[#1E293B] border border-[#476072]/60 hover:border-sky-400 text-sky-300 hover:text-white font-mono text-[10px] cursor-pointer transition-all hover:bg-[#334257] shadow-sm"
                   >
                     +{tbl}
                   </button>
@@ -930,6 +951,14 @@ const MainAppContent: React.FC<{
       <KeyboardShortcutsModal
         isOpen={isKeyboardModalOpen}
         onClose={() => setIsKeyboardModalOpen(false)}
+      />
+      {/* QUERY HISTORY MODAL POPUP */}
+      <QueryHistoryModal
+        isOpen={isQueryHistoryModalOpen}
+        onClose={() => setIsQueryHistoryModalOpen(false)}
+        history={history}
+        onSelectHistoryItem={(item) => handleSelectHistoryItem(item)}
+        onClearHistory={clearHistory}
       />
     </div>
   );

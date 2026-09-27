@@ -47,7 +47,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import type { QueryResponseData } from "../types";
 import { useChat } from "../context/ChatContext";
@@ -304,38 +303,145 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
   };
 
   const exportToPDF = async () => {
-    if (!cardRef.current) return;
     setIsExportingPdf(true);
     try {
-      const element = cardRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#1E293B",
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
+        orientation: "portrait",
+        unit: "pt",
         format: "a4",
       });
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - 20;
-      let renderHeight = (canvas.height * imgWidth) / canvas.width;
+      // Background Slate Layout
+      pdf.setFillColor(30, 41, 59); // Slate dark
+      pdf.rect(0, 0, 595, 842, "F");
 
-      if (renderHeight > pageHeight - 20) {
-        renderHeight = pageHeight - 20;
+      // Title & Brand Header
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(22);
+      pdf.setTextColor(56, 189, 248); // Oceanic Cyan
+      pdf.text("SQLGuard Analytics Report", 40, 50);
+
+      pdf.setFontSize(9);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(148, 163, 184);
+      pdf.text(`Generated: ${new Date().toLocaleString()}  |  AST Guard Policy Verified`, 40, 68);
+
+      let currentY = 100;
+
+      // User Question Box
+      pdf.setFillColor(51, 66, 87);
+      pdf.roundedRect(40, currentY, 515, 45, 6, 6, "F");
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9);
+      pdf.setTextColor(56, 189, 248);
+      pdf.text("QUERY QUESTION:", 52, currentY + 16);
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+      pdf.setTextColor(248, 250, 252);
+      const questionLines = pdf.splitTextToSize(question || "Analytics Query", 490);
+      pdf.text(questionLines, 52, currentY + 32);
+
+      currentY += 60;
+
+      // Synthesized SQL Box
+      if (sqlQuery) {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(9);
+        pdf.setTextColor(56, 189, 248);
+        pdf.text("SYNTHESIZED READ-ONLY SQL QUERY:", 40, currentY);
+        currentY += 12;
+
+        pdf.setFillColor(15, 23, 42);
+        pdf.roundedRect(40, currentY, 515, 50, 6, 6, "F");
+
+        pdf.setFont("courier", "normal");
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(52, 211, 153); // Emerald
+        const splitSql = pdf.splitTextToSize(sqlQuery, 495);
+        pdf.text(splitSql, 52, currentY + 18);
+
+        currentY += 65;
       }
 
-      pdf.addImage(imgData, "PNG", 10, 10, imgWidth, renderHeight);
+      // AI Executive Summary
+      if (executiveSummary && executiveSummary.length > 0) {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.setTextColor(56, 189, 248);
+        pdf.text("AI EXECUTIVE INSIGHTS:", 40, currentY);
+        currentY += 14;
+
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9.5);
+        pdf.setTextColor(226, 232, 240);
+
+        executiveSummary.forEach((point) => {
+          const bulletText = `•  ${point}`;
+          const lines = pdf.splitTextToSize(bulletText, 500);
+          pdf.text(lines, 45, currentY);
+          currentY += lines.length * 13 + 3;
+        });
+
+        currentY += 15;
+      }
+
+      // Result Data Table
+      if (results && results.length > 0) {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.setTextColor(56, 189, 248);
+        pdf.text(`QUERY RESULTS (${results.length} RECORD${results.length > 1 ? "S" : ""}):`, 40, currentY);
+        currentY += 14;
+
+        const tableKeys = keys.slice(0, 5);
+        const colWidth = 515 / tableKeys.length;
+
+        // Header row
+        pdf.setFillColor(51, 66, 87);
+        pdf.rect(40, currentY, 515, 20, "F");
+
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(248, 250, 252);
+        tableKeys.forEach((k, colIdx) => {
+          pdf.text(String(k).toUpperCase(), 45 + colIdx * colWidth, currentY + 13);
+        });
+        currentY += 20;
+
+        // Data Rows
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        results.slice(0, 30).forEach((row, rowIdx) => {
+          if (currentY > 800) {
+            pdf.addPage();
+            pdf.setFillColor(30, 41, 59);
+            pdf.rect(0, 0, 595, 842, "F");
+            currentY = 40;
+          }
+
+          if (rowIdx % 2 === 0) {
+            pdf.setFillColor(30, 41, 59);
+          } else {
+            pdf.setFillColor(24, 34, 48);
+          }
+          pdf.rect(40, currentY, 515, 18, "F");
+
+          pdf.setTextColor(203, 213, 225);
+          tableKeys.forEach((k, colIdx) => {
+            const valStr = String(row[k] ?? "");
+            pdf.text(valStr.slice(0, 25), 45 + colIdx * colWidth, currentY + 12);
+          });
+          currentY += 18;
+        });
+      }
+
       const filename = `${getSanitizedBaseName()}.pdf`;
       pdf.save(filename);
       toast.success(`Exported PDF Report: ${filename}`);
-    } catch {
+    } catch (err) {
+      console.error("PDF Export Error:", err);
       toast.error("Failed to generate PDF report.");
     } finally {
       setIsExportingPdf(false);
@@ -436,8 +542,8 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
           </div>
         </div>
 
-        {/* Header Badges & Actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Header Badges & Actions Toolbar */}
+        <div className="flex flex-wrap items-center gap-1.5 shrink-0 max-w-full">
           {executionTimeMs !== undefined && executionTimeMs > 0 && (
             <span className="hidden sm:flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-800/40 font-mono">
               <Zap className="w-3 h-3 text-emerald-400" /> {executionTimeMs}ms

@@ -142,6 +142,10 @@ export const ChatProvider: React.FC<{
   const messages = activeSession?.messages || [];
 
   const createNewSession = (): string => {
+    if (activeSession && activeSession.messages.length === 0) {
+      toast.info("Already in a new empty analytics chat session");
+      return activeSession.id;
+    }
     const newSession = createDefaultSession();
     setSessions((prev) => [newSession, ...prev]);
     setActiveSessionId(newSession.id);
