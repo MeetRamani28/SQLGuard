@@ -1,7 +1,14 @@
 import os
 import logging
-import chromadb
-from chromadb.api.types import EmbeddingFunction, Documents, Embeddings
+try:
+    import chromadb
+    from chromadb.api.types import EmbeddingFunction, Documents, Embeddings
+    HAS_CHROMADB = True
+except ImportError:
+    HAS_CHROMADB = False
+    EmbeddingFunction = object
+    Documents = list
+    Embeddings = list
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -88,7 +95,14 @@ def get_vectorstore_collection():
         except Exception as err:
             logger.warning(f"Pinecone initialization warning: {err}. Falling back to persistent local ChromaDB.")
 
-    # Development or fallback mode: Local ChromaDB
+    # Development or fallback mode: Local ChromaDB if available
+    if not HAS_CHROMADB or not hasattr(chromadb, "PersistentClient"):
+        logger.warning("ChromaDB module unavailable. Using Pinecone Schema Vector Store fallback.")
+        return PineconeSchemaVectorStore(
+            api_key=settings.PINECONE_API_KEY or "dev_key",
+            index_name=settings.PINECONE_INDEX_NAME or "sqlguard-schema"
+        )
+
     persist_dir = os.path.abspath(settings.CHROMA_PERSIST_DIR)
     os.makedirs(persist_dir, exist_ok=True)
     
