@@ -1,4 +1,4 @@
-from fastapi import Header, HTTPException
+from fastapi import Header, HTTPException, Depends
 from app.core.config import settings
 
 class User:
@@ -23,3 +23,17 @@ async def get_current_user(authorization: str = Header(None)) -> User:
 
     # Phase 2 production auth token parsing (Clerk / Supabase Auth)
     return User(user_id="prod_user_001", email="user@sqlguard.com", role="analyst")
+
+def require_roles(allowed_roles: list[str]):
+    """
+    Description: OWASP Access Control Enforcer (RBAC).
+    Usecase: Restricts endpoint execution to authorized security roles.
+    """
+    async def role_checker(user: User = Depends(get_current_user)):
+        if user.role.lower() not in [r.lower() for r in allowed_roles] and user.role.lower() != "admin":
+            raise HTTPException(
+                status_code=403,
+                detail=f"OWASP ACCESS CONTROL ERROR: User role '{user.role}' lacks permission for this endpoint."
+            )
+        return user
+    return role_checker

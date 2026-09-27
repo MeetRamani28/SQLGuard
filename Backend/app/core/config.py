@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     # Security & Auth Settings
     MOCK_AUTH_BYPASS: bool = True
     SECRET_KEY: str = "dev-secret-key-for-sqlguard-local"
+    FRONTEND_URL: str = "http://localhost:5173"
+    ALLOWED_ORIGINS: str = ""
     
     model_config = SettingsConfigDict(
         env_file=env_file_path if os.path.exists(env_file_path) else None,

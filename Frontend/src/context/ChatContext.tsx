@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import type { ChatMessage, ChatSession, DbConfig, QueryResponseData } from "../types";
+import type { ChatMessage, ChatSession, DbConfig, QueryResponseData, PinnedCardItem } from "../types";
 import { submitAnalyticsQuery } from "../services/api";
 import { toast } from "sonner";
 
@@ -11,6 +11,7 @@ interface ChatContextType {
   loading: boolean;
   dbConfig: DbConfig | null;
   history: QueryResponseData[];
+  pinnedCards: PinnedCardItem[];
   userId: string;
   userEmail: string;
   userName: string;
@@ -25,6 +26,8 @@ interface ChatContextType {
   disconnectDb: () => void;
   loadHistoryItem: (item: QueryResponseData) => void;
   clearHistory: () => void;
+  pinCard: (item: QueryResponseData) => void;
+  unpinCard: (id: string) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -77,6 +80,11 @@ export const ChatProvider: React.FC<{
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [pinnedCards, setPinnedCards] = useState<PinnedCardItem[]>(() => {
+    const saved = localStorage.getItem(`${storagePrefix}_pinned_cards`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [loading, setLoading] = useState(false);
 
   // Sync state whenever user switches accounts
@@ -126,6 +134,10 @@ export const ChatProvider: React.FC<{
     localStorage.setItem(`${storagePrefix}_history`, JSON.stringify(history));
   }, [history, storagePrefix]);
 
+  useEffect(() => {
+    localStorage.setItem(`${storagePrefix}_pinned_cards`, JSON.stringify(pinnedCards));
+  }, [pinnedCards, storagePrefix]);
+
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
   const messages = activeSession?.messages || [];
 
@@ -170,6 +182,26 @@ export const ChatProvider: React.FC<{
     setSessions([fresh]);
     setActiveSessionId(fresh.id);
     toast.info("Cleared all chat sessions");
+  };
+
+  const pinCard = (item: QueryResponseData) => {
+    if (pinnedCards.some((p) => p.data.question === item.question)) {
+      toast.info("Card is already pinned to your Live Dashboard.");
+      return;
+    }
+    const newPinned: PinnedCardItem = {
+      id: `pinned-${Date.now()}`,
+      title: item.question,
+      data: item,
+      pinnedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+    setPinnedCards((prev) => [newPinned, ...prev]);
+    toast.success("Pinned to Live Dashboard!");
+  };
+
+  const unpinCard = (id: string) => {
+    setPinnedCards((prev) => prev.filter((p) => p.id !== id));
+    toast.info("Unpinned card from Dashboard.");
   };
 
   const sendMessage = async (question: string) => {
@@ -218,7 +250,14 @@ export const ChatProvider: React.FC<{
     setLoading(true);
 
     try {
-      const res = await submitAnalyticsQuery(question, dbConfig);
+      const chatHistory = messages
+        .filter((m) => m.data?.sql_query)
+        .map((m) => ({
+          question: m.content || m.data?.question || "",
+          sql_query: m.data?.sql_query || "",
+        }));
+
+      const res = await submitAnalyticsQuery(question, dbConfig, chatHistory);
 
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -358,6 +397,7 @@ export const ChatProvider: React.FC<{
         loading,
         dbConfig,
         history,
+        pinnedCards,
         userId,
         userEmail,
         userName,
@@ -372,6 +412,8 @@ export const ChatProvider: React.FC<{
         disconnectDb,
         loadHistoryItem,
         clearHistory,
+        pinCard,
+        unpinCard,
       }}
     >
       {children}

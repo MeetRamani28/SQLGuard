@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: sqlguard-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
+    startCommand: "gunicorn app.main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PROJECT_NAME
+        value: SQLGuard
+      - key: GROQ_API_KEY
+        sync: false
+      - key: MODEL_NAME
+        value: openai/gpt-oss-20b
+      - key: SQLITE_DB_PATH
+        value: ./sqlguard_dev.db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MOCK_AUTH_BYPASS
+        value: "true"

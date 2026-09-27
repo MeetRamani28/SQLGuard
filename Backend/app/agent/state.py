@@ -16,3 +16,6 @@ class AgentState(TypedDict):
     max_retries: int                
     chart_type: Optional[str]       
     explanation: Optional[str]      
+    chat_history: Optional[List[Dict[str, str]]]
+    executive_summary: Optional[List[str]]
+    anomalies: Optional[List[Dict[str, Any]]]

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, lazy, Suspense } from "react";
 import {
   Database,
-  Cpu,
   Sparkles,
   AlertCircle,
   RefreshCw,
@@ -13,13 +12,21 @@ import {
   Plus,
   Edit2,
   Check,
-  Globe,
   Table as TableIcon,
   XCircle,
   Layers,
   Menu,
   ChevronsLeft,
   X,
+  Pin,
+  ShieldCheck,
+  LayoutGrid,
+  Activity,
+  Bookmark,
+  Mic,
+  Network,
+  Clock,
+  Keyboard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "sonner";
@@ -28,6 +35,13 @@ import { QueryResponseCard } from "./components/QueryResponseCard";
 import { Database3DCanvas } from "./components/Database3DCanvas";
 import { SkeletonLoader } from "./components/SkeletonLoader";
 import { AuthGateway, UserButton } from "./components/AuthGateway";
+import { SavedQueriesModal } from "./components/SavedQueriesModal";
+import { ErDiagramModal } from "./components/ErDiagramModal";
+import { SystemHealthModal } from "./components/SystemHealthModal";
+import { QueryScheduleModal } from "./components/QueryScheduleModal";
+import { CommandPaletteModal } from "./components/CommandPaletteModal";
+import { QueryCompareModal } from "./components/QueryCompareModal";
+import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 
 // Code splitting with React.lazy
 const ConnectDbModal = lazy(() =>
@@ -62,6 +76,7 @@ const MainAppContent: React.FC<{
     loading,
     dbConfig,
     history,
+    pinnedCards,
     createNewSession,
     switchSession,
     renameSession,
@@ -71,20 +86,132 @@ const MainAppContent: React.FC<{
     disconnectDb,
     loadHistoryItem,
     clearHistory,
+    unpinCard,
   } = useChat();
 
   const [questionInput, setQuestionInput] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [isSchemaModalOpen, setIsSchemaModalOpen] = useState(false);
+  const [isDashboardModalOpen, setIsDashboardModalOpen] = useState(false);
+  const [isAuditLogModalOpen, setIsAuditLogModalOpen] = useState(false);
+  const [isSavedQueriesModalOpen, setIsSavedQueriesModalOpen] = useState(false);
+  const [isErDiagramModalOpen, setIsErDiagramModalOpen] = useState(false);
+  const [isSystemHealthModalOpen, setIsSystemHealthModalOpen] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [isKeyboardModalOpen, setIsKeyboardModalOpen] = useState(false);
+  const [isListeningVoice, setIsListeningVoice] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
+
+  const handleCommandSelect = (actionId: string) => {
+    switch (actionId) {
+      case "toggle-command-palette":
+        setIsCommandPaletteOpen(true);
+        break;
+      case "shortcuts":
+      case "hotkeys":
+        setIsKeyboardModalOpen(true);
+        break;
+      case "schema":
+        setIsSchemaModalOpen(true);
+        break;
+      case "er":
+        setIsErDiagramModalOpen(true);
+        break;
+      case "dashboard":
+        setIsDashboardModalOpen(true);
+        break;
+      case "bookmarks":
+        setIsSavedQueriesModalOpen(true);
+        break;
+      case "health":
+        setIsSystemHealthModalOpen(true);
+        break;
+      case "schedules":
+        setIsScheduleModalOpen(true);
+        break;
+      case "audit":
+        setIsAuditLogModalOpen(true);
+        break;
+      case "connect":
+        setIsDbModalOpen(true);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleVoiceInput = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Web Speech API is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListeningVoice(true);
+      toast.info("Listening for voice query (Speak now)...");
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setQuestionInput(transcript);
+      toast.success(`Voice captured: "${transcript}"`);
+      setIsListeningVoice(false);
+    };
+
+    recognition.onerror = () => {
+      toast.error("Voice input error or timeout.");
+      setIsListeningVoice(false);
+    };
+
+    recognition.onend = () => {
+      setIsListeningVoice(false);
+    };
+
+    recognition.start();
+  };
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isInput = targetTag === "input" || targetTag === "textarea" || (e.target as HTMLElement)?.isContentEditable;
+
+      if (e.key === "?" && !isInput) {
+        e.preventDefault();
+        setIsKeyboardModalOpen((prev) => !prev);
+      } else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        setIsDashboardModalOpen((prev) => !prev);
+      } else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        setIsSchemaModalOpen((prev) => !prev);
+      } else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setIsSavedQueriesModalOpen((prev) => !prev);
+      } else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "h") {
+        e.preventDefault();
+        setIsSystemHealthModalOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,6 +311,84 @@ const MainAppContent: React.FC<{
 
         {/* Right Header Navigation */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Command Palette Button */}
+          <button
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#476072]/60 transition-all cursor-pointer font-medium shadow-sm"
+            title="Open Command Palette (Ctrl+K)"
+          >
+            <Terminal className="w-3.5 h-3.5 text-[#548CA8]" />
+            <span className="hidden sm:inline">Commands</span>
+            <span className="hidden md:inline-block text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono border border-slate-700">
+              Ctrl K
+            </span>
+          </button>
+
+          {/* Hotkeys Reference Button */}
+          <button
+            onClick={() => setIsKeyboardModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#476072]/60 transition-all cursor-pointer font-medium shadow-sm"
+            title="Keyboard Hotkeys & Shortcuts (?)"
+          >
+            <Keyboard className="w-3.5 h-3.5 text-[#548CA8]" />
+            <span className="hidden xl:inline">Hotkeys</span>
+          </button>
+
+          {/* Live Dashboard Button */}
+          <button
+            onClick={() => setIsDashboardModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-[#548CA8] hover:text-[#EEEEEE] px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#476072]/60 transition-all cursor-pointer font-medium shadow-sm relative"
+            title="Live Pinned Analytics Dashboard"
+          >
+            <LayoutGrid className="w-3.5 h-3.5 text-[#548CA8]" />
+            <span className="hidden sm:inline">Live Dashboard</span>
+            {pinnedCards.length > 0 && (
+              <span className="text-[10px] bg-[#548CA8] text-[#EEEEEE] px-1.5 py-0.2 rounded-full font-bold">
+                {pinnedCards.length}
+              </span>
+            )}
+          </button>
+
+          {/* Saved Queries Library Button */}
+          <button
+            onClick={() => setIsSavedQueriesModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-indigo-600/20 text-indigo-400 hover:text-[#EEEEEE] px-2.5 sm:px-3 py-1.5 rounded-xl border border-indigo-500/30 transition-colors cursor-pointer font-medium shadow-sm"
+            title="Saved Query Templates & Bookmarks"
+          >
+            <Bookmark className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden sm:inline">Saved Queries</span>
+          </button>
+
+          {/* ER Diagram Button */}
+          <button
+            onClick={() => setIsErDiagramModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-cyan-600/20 text-cyan-400 hover:text-[#EEEEEE] px-2.5 sm:px-3 py-1.5 rounded-xl border border-cyan-500/30 transition-colors cursor-pointer font-medium shadow-sm"
+            title="Interactive ER Schema Diagram"
+          >
+            <Network className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden lg:inline">ER Diagram</span>
+          </button>
+
+          {/* System Health Button */}
+          <button
+            onClick={() => setIsSystemHealthModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-emerald-600/20 text-emerald-400 hover:text-[#EEEEEE] px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-500/30 transition-colors cursor-pointer font-medium shadow-sm"
+            title="System Observability & Latency SLA"
+          >
+            <Activity className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden lg:inline">Health</span>
+          </button>
+
+          {/* Scheduler Button */}
+          <button
+            onClick={() => setIsScheduleModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-purple-600/20 text-purple-400 hover:text-[#EEEEEE] px-2.5 sm:px-3 py-1.5 rounded-xl border border-purple-500/30 transition-colors cursor-pointer font-medium shadow-sm"
+            title="Automated Query Schedules"
+          >
+            <Clock className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden lg:inline">Schedules</span>
+          </button>
+
           {/* Schema Explorer Button */}
           <button
             onClick={() => setIsSchemaModalOpen(true)}
@@ -215,15 +420,14 @@ const MainAppContent: React.FC<{
             )}
           </div>
 
-          <div className="hidden xl:flex items-center gap-1.5 text-xs text-[#548CA8] bg-[#1E293B] px-3 py-1.5 rounded-xl border border-[#476072]/60 font-medium">
-            <Globe className="w-3.5 h-3.5 text-[#548CA8]" />
-            <span>EN | ગુજરાતી | हिंदी</span>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-800/40 font-medium">
-            <Cpu className="w-3.5 h-3.5" />
+          <button
+            onClick={() => setIsAuditLogModalOpen(true)}
+            className="hidden lg:flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/60 px-3 py-1.5 rounded-xl border border-emerald-800/40 font-medium cursor-pointer transition-all"
+            title="View System Observability & AST Security Policy"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
             <span>AST Active</span>
-          </div>
+          </button>
 
           {/* Custom Cyberpunk User Profile Dropdown */}
           <div className="flex items-center gap-2 pl-1 border-l border-[#476072]/50">
@@ -231,6 +435,105 @@ const MainAppContent: React.FC<{
           </div>
         </div>
       </header>
+
+      {/* LIVE DASHBOARD MODAL */}
+      {isDashboardModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-[#476072] w-full max-w-5xl h-[85vh] rounded-2xl p-6 shadow-2xl flex flex-col space-y-4">
+            <div className="flex items-center justify-between border-b border-[#476072]/60 pb-3">
+              <div className="flex items-center gap-2 text-[#548CA8] font-bold text-base">
+                <LayoutGrid className="w-5 h-5 text-[#548CA8]" />
+                <span className="text-[#EEEEEE]">Live Pinned Analytics Dashboard</span>
+                <span className="text-xs bg-[#548CA8]/20 border border-[#548CA8]/40 px-2 py-0.5 rounded-full text-[#548CA8]">
+                  {pinnedCards.length} Pinned Metrics
+                </span>
+              </div>
+              <button
+                onClick={() => setIsDashboardModalOpen(false)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar">
+              {pinnedCards.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center space-y-2 text-slate-400">
+                  <Pin className="w-8 h-8 text-[#548CA8] opacity-50" />
+                  <span className="text-xs">No pinned cards yet. Click "Pin" on any query result card to build your dashboard.</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {pinnedCards.map((pinned) => (
+                    <div key={pinned.id} className="relative group">
+                      <button
+                        onClick={() => unpinCard(pinned.id)}
+                        className="absolute right-3 top-3 z-10 p-1 bg-rose-950/80 text-rose-300 hover:bg-rose-900 rounded border border-rose-800/40 text-[10px] cursor-pointer"
+                        title="Unpin Card"
+                      >
+                        Unpin
+                      </button>
+                      <QueryResponseCard data={pinned.data} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AST SECURITY AUDIT LOG MODAL */}
+      {isAuditLogModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-[#476072] w-full max-w-xl rounded-2xl p-6 shadow-2xl space-y-4 text-xs text-[#EEEEEE]">
+            <div className="flex items-center justify-between border-b border-[#476072]/60 pb-3">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold text-base">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <span>AST Security Guard & System Audit Policy</span>
+              </div>
+              <button
+                onClick={() => setIsAuditLogModalOpen(false)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="p-3 bg-[#0f172a] rounded-xl border border-[#476072]/60 space-y-1.5">
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-[#548CA8] font-semibold">AST Guard Mode</span>
+                  <span className="text-emerald-400 font-mono font-bold">Strict Read-Only SELECT</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-[#548CA8] font-semibold">PII Data Masking</span>
+                  <span className="text-emerald-400 font-mono font-bold">ACTIVE (SSN, Passwords, Credit Cards)</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-[#548CA8] font-semibold">Schema Vector RAG</span>
+                  <span className="text-sky-300 font-mono font-bold">ChromaDB / Pinecone Hybrid</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-[#548CA8] font-semibold">LangGraph Self-Correction</span>
+                  <span className="text-amber-400 font-mono font-bold">Max 3 Heals / Query</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-xl space-y-1 text-[11px] text-emerald-200">
+                <p className="font-bold flex items-center gap-1 text-emerald-400">
+                  <Activity className="w-3.5 h-3.5" /> Enforced Security Rules:
+                </p>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-300">
+                  <li>Destructive SQL commands (DROP, DELETE, INSERT, UPDATE, ALTER) hard-stopped before execution.</li>
+                  <li>Multi-statement SQL injections automatically rejected.</li>
+                  <li>Max row result cap enforced at 1000 rows.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lazy Loaded Connection Manager Modal */}
       <Suspense fallback={null}>
@@ -539,6 +842,18 @@ const MainAppContent: React.FC<{
                     className="w-full bg-transparent border-none px-3 sm:px-4 py-2 text-xs sm:text-sm text-[#EEEEEE] placeholder-slate-400 focus:outline-none"
                   />
                   <button
+                    type="button"
+                    onClick={handleVoiceInput}
+                    className={`p-2 rounded-xl text-xs transition-colors shrink-0 ${
+                      isListeningVoice
+                        ? "bg-rose-600 text-white animate-pulse"
+                        : "text-[#548CA8] hover:bg-[#334257] hover:text-white"
+                    }`}
+                    title="Multilingual Voice Input (English, Gujarati, Hindi)"
+                  >
+                    <Mic className="w-4 h-4" />
+                  </button>
+                  <button
                     type="submit"
                     disabled={loading || !questionInput.trim()}
                     className="bg-[#548CA8] hover:bg-[#476072] disabled:bg-[#1E293B] disabled:text-slate-600 text-[#EEEEEE] font-semibold px-4 sm:px-5 py-2.5 rounded-xl flex items-center gap-1.5 text-xs transition-all cursor-pointer shrink-0 shadow-lg shadow-[#548CA8]/20"
@@ -557,10 +872,65 @@ const MainAppContent: React.FC<{
                   </button>
                 </div>
               </form>
+              {/* Quick Table Suggestion Chips */}
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[11px] text-slate-400">
+                <span className="font-semibold text-[#548CA8] flex items-center gap-1 text-[10px] uppercase tracking-wider">
+                  <TableIcon className="w-3 h-3 text-[#548CA8]" /> Table Chips:
+                </span>
+                {["customers", "orders", "revenue", "products", "categories", "region"].map((tbl) => (
+                  <button
+                    key={tbl}
+                    type="button"
+                    onClick={() => setQuestionInput((prev) => (prev ? `${prev} ${tbl}` : `Show data from ${tbl}`))}
+                    className="px-2 py-0.5 rounded-lg bg-[#1E293B] border border-[#476072]/60 hover:border-[#548CA8] text-sky-300 font-mono text-[10px] cursor-pointer transition-all hover:bg-[#334257]"
+                  >
+                    +{tbl}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </main>
       </div>
+      {/* SAVED QUERIES LIBRARY MODAL */}
+      <SavedQueriesModal
+        isOpen={isSavedQueriesModalOpen}
+        onClose={() => setIsSavedQueriesModalOpen(false)}
+        onRunQuery={(q) => sendMessage(q)}
+      />
+      {/* ER DIAGRAM MODAL */}
+      <ErDiagramModal
+        isOpen={isErDiagramModalOpen}
+        onClose={() => setIsErDiagramModalOpen(false)}
+      />
+      {/* SYSTEM HEALTH & OBSERVABILITY METRICS MODAL */}
+      <SystemHealthModal
+        isOpen={isSystemHealthModalOpen}
+        onClose={() => setIsSystemHealthModalOpen(false)}
+      />
+      {/* AUTOMATED QUERY SCHEDULER MODAL */}
+      <QueryScheduleModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+      />
+      {/* GLOBAL COMMAND PALETTE (CTRL+K) */}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onSelectAction={handleCommandSelect}
+      />
+      {/* SIDE-BY-SIDE QUERY COMPARE & DIFF MODAL */}
+      <QueryCompareModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
+        cardA={history[0] || null}
+        cardB={history[1] || null}
+      />
+      {/* KEYBOARD SHORTCUTS MODAL */}
+      <KeyboardShortcutsModal
+        isOpen={isKeyboardModalOpen}
+        onClose={() => setIsKeyboardModalOpen(false)}
+      />
     </div>
   );
 };

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { X, Database, Table as TableIcon, Search, RefreshCw } from "lucide-react";
+import { X, Database, Table as TableIcon, Search, RefreshCw, Cpu } from "lucide-react";
 import type { DbConfig, SchemaResponseData, TableSchemaInfo } from "../types";
-import { fetchDatabaseSchema } from "../services/api";
+import { fetchDatabaseSchema, syncSchemaVectorEmbeddings } from "../services/api";
+import { toast } from "sonner";
 
 interface SchemaExplorerModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const SchemaExplorerModal: React.FC<SchemaExplorerModalProps> = ({
 }) => {
   const [schemaData, setSchemaData] = useState<SchemaResponseData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isSyncingEmbeddings, setIsSyncingEmbeddings] = useState(false);
   const [selectedTable, setSelectedTable] = useState<TableSchemaInfo | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -40,6 +42,22 @@ export const SchemaExplorerModal: React.FC<SchemaExplorerModalProps> = ({
     }
   };
 
+  const handleSyncEmbeddings = async () => {
+    setIsSyncingEmbeddings(true);
+    try {
+      const res = await syncSchemaVectorEmbeddings(dbConfig);
+      if (res.success) {
+        toast.success(res.message);
+      } else {
+        toast.error(res.message);
+      }
+    } catch {
+      toast.error("Failed to sync schema embeddings.");
+    } finally {
+      setIsSyncingEmbeddings(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const filteredTables = schemaData?.tables.filter((t) =>
@@ -61,6 +79,16 @@ export const SchemaExplorerModal: React.FC<SchemaExplorerModalProps> = ({
             )}
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleSyncEmbeddings}
+              disabled={isSyncingEmbeddings}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-sky-950 hover:bg-sky-900 border border-sky-800/60 text-sky-300 rounded-lg cursor-pointer transition-all"
+              title="Re-index Vector Schema Embeddings in ChromaDB/Pinecone"
+            >
+              <Cpu className={`w-3.5 h-3.5 ${isSyncingEmbeddings ? "animate-spin text-amber-400" : ""}`} />
+              <span>{isSyncingEmbeddings ? "Syncing..." : "Sync Vector RAG"}</span>
+            </button>
+
             <button
               onClick={loadSchema}
               disabled={loading}

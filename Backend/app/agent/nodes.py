@@ -5,7 +5,7 @@ from app.core.config import settings
 from app.agent.state import AgentState
 from app.core.schema_rag import get_relevant_schema
 from app.core.db_factory import get_db_connection as factory_get_db_connection
-from app.security.ast_guard import validate_read_only_sql
+from app.security.ast_guard import validate_read_only_sql, mask_pii_data, detect_data_anomalies
 
 def get_llm():
     """Returns ChatGroq instance with current model configuration."""
@@ -17,21 +17,33 @@ def get_llm():
 
 def generate_sql_node(state: AgentState) -> dict:
     """
-    Description: Synthesizes a SQL SELECT query based on user question and Schema-RAG retrieved context,
+    Description: Synthesizes a SQL SELECT query based on user question, conversation history, and Schema-RAG retrieved context,
                  plus a 1-sentence breakdown explaining the SQL logic.
     Usecase: Initial step to convert text into structured JSON containing SQL + Explanation.
     """
     db_config = state.get("db_config")
     schema = get_relevant_schema(state["question"], db_config=db_config, top_k=3)
+    chat_history = state.get("chat_history") or []
     
+    history_str = ""
+    if chat_history:
+        formatted_history = []
+        for turn in chat_history[-4:]:  # Include last 4 turns for context
+            user_q = turn.get("question", turn.get("user", ""))
+            prev_sql = turn.get("sql_query", turn.get("sql", ""))
+            if user_q:
+                formatted_history.append(f"User: {user_q}\nPrevious SQL: {prev_sql}")
+        if formatted_history:
+            history_str = "\nPRIOR CONVERSATION HISTORY:\n" + "\n---\n".join(formatted_history) + "\n"
+
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are an expert Data Engineer and Multilingual Database Assistant. 
+        ("system", f"""You are an expert Data Engineer and Multilingual Database Assistant. 
 Your task is to convert natural language business questions into valid SQL SELECT queries AND provide a brief 1-sentence breakdown explaining which tables/conditions you used.
 
 MULTILINGUAL SUPPORT (CRITICAL):
 - The user question can be in ENGLISH, GUJARATI (ગુજરાતી or Roman Gujarati/Gujlish e.g. 'ketla users che', 'ketlu revenue thavu', 'aama ketla records che'), or HINDI (हिंदी or Roman Hindi/Hinglish e.g. 'kitne users hain', 'kul kitna revenue hua', 'sabse mehanga product').
 - Comprehend the intent in ANY of these 3 languages (or mixed code-switched scripts) and map words accurately to the database schema.
-
+{history_str}
 CRITICAL RULES:
 1. Output MUST be a valid JSON object with keys: "sql_query" and "sql_explanation".
 2. DO NOT include markdown formatting like ```json or explanations outside the JSON structure.
@@ -42,7 +54,7 @@ CRITICAL RULES:
 4. Use valid table and column names as specified in the schema below.
 
 DATABASE SCHEMA:
-{schema}"""),
+{{schema}}"""),
         ("human", "Question: {question}")
     ])
 
@@ -115,7 +127,7 @@ def validate_sql_node(state: AgentState) -> dict:
 def execute_sql_node(state: AgentState) -> dict:
     """
     Description: Executes validated SQL query against target database (SQLite or PostgreSQL).
-    Usecase: Retrieves data rows or catches database runtime errors.
+    Usecase: Retrieves data rows or catches database runtime errors, applying PII data masking.
     """
     try:
         db_config = state.get("db_config")
@@ -127,9 +139,12 @@ def execute_sql_node(state: AgentState) -> dict:
         conn.close()
 
         dict_results = [dict(row) for row in rows]
+        masked_results = mask_pii_data(dict_results)
+        anomalies = detect_data_anomalies(dict_results)
         
         return {
-            "query_result": dict_results,
+            "query_result": masked_results,
+            "anomalies": anomalies,
             "error_trace": None
         }
     except Exception as e:
@@ -182,27 +197,29 @@ Corrected SQL Query:""")
 
 def chart_mapping_node(state: AgentState) -> dict:
     """
-    Description: Analyzes data result set and selects optimal visual chart type + business insight.
-    Usecase: Powers React Recharts UI dynamically without hardcoded chart selection.
+    Description: Analyzes data result set and selects optimal visual chart type + business insight + executive summary bullets.
+    Usecase: Powers React Recharts UI dynamically with executive summaries.
     """
     results = state.get("query_result", [])
     if not results:
         return {
             "chart_type": "none",
-            "explanation": "No data records found for this query."
+            "explanation": "No data records found for this query.",
+            "executive_summary": ["No database records were returned for this question."]
         }
 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are a Data Visualization Specialist.
+        ("system", """You are a Data Analytics & Visualization Specialist.
 Analyze the provided query results and user question, then output a JSON object with:
 1. "chart_type": Choose best from ['bar', 'line', 'pie', 'table']
    - Use 'bar' for categorical comparisons or rankings.
    - Use 'line' for time-series / date trends.
    - Use 'pie' for proportional breakdown of a whole (under 6 items).
    - Use 'table' for multi-column details or text-dense outputs.
-2. "explanation": A concise 1-2 sentence business insight derived from the data. Write the explanation in English or the same language/script as the user question.
+2. "explanation": A concise 1-2 sentence business insight derived from the data.
+3. "executive_summary": An array of 2-3 bullet point key insights summarizing key trends or metrics in the data.
 
-Return ONLY raw JSON in this format: {{"chart_type": "...", "explanation": "..."}}"""),
+Return ONLY raw JSON in this format: {{"chart_type": "...", "explanation": "...", "executive_summary": ["...", "..."]}}"""),
         ("human", "Question: {question}\nData Sample: {data_sample}")
     ])
 
@@ -222,12 +239,18 @@ Return ONLY raw JSON in this format: {{"chart_type": "...", "explanation": "..."
             clean_json = clean_json[:-3].strip()
 
         parsed = json.loads(clean_json)
+        exec_summary = parsed.get("executive_summary", [])
+        if not isinstance(exec_summary, list):
+            exec_summary = [str(exec_summary)]
+
         return {
             "chart_type": parsed.get("chart_type", "table"),
-            "explanation": parsed.get("explanation", "Query executed successfully.")
+            "explanation": parsed.get("explanation", "Query executed successfully."),
+            "executive_summary": exec_summary
         }
     except Exception:
         return {
             "chart_type": "table",
-            "explanation": f"Successfully retrieved {len(results)} rows."
+            "explanation": f"Successfully retrieved {len(results)} rows.",
+            "executive_summary": [f"Retrieved {len(results)} records from the database."]
         }

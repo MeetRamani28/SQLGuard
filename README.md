@@ -160,6 +160,37 @@ cd SQLGuard
 
 ---
 
+## ☁️ Production Deployment Guide
+
+### 1️⃣ Backend Deployment (Render)
+1. Push your repository to **GitHub**.
+2. Log into [Render Dashboard](https://dashboard.render.com/) and click **New +** -> **Web Service**.
+3. Connect your `SQLGuard` repository and select root directory `/Backend`.
+4. Render will automatically detect `render.yaml` or set:
+   - **Environment**: Python 3
+   - **Build Command**: `pip install --upgrade pip && pip install -r requirements.txt`
+   - **Start Command**: `gunicorn app.main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT`
+5. Add Environment Variables:
+   - `GROQ_API_KEY`: `your_groq_api_key_here`
+   - `APP_ENV`: `production`
+   - `SECRET_KEY`: `your_secure_random_key`
+6. Click **Deploy Web Service**. Render will assign a public URL (e.g. `https://sqlguard-backend.onrender.com`).
+
+---
+
+### 2️⃣ Frontend Deployment (Vercel)
+1. Log into [Vercel Dashboard](https://vercel.com/) and click **Add New Project**.
+2. Import your `SQLGuard` GitHub repository.
+3. Set **Root Directory** to `Frontend`.
+4. Vercel will automatically detect `vercel.json` framework settings:
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+5. Under **Environment Variables**, add:
+   - `VITE_API_BASE_URL`: `https://sqlguard-backend.onrender.com` (Your Render backend URL)
+6. Click **Deploy**. Vercel will assign a production URL (e.g. `https://sqlguard.vercel.app`).
+
+---
+
 ## 🛠️ Tech Stack
 
 * **Frontend:** React 19, TypeScript, Tailwind CSS, Framer Motion, Recharts, Sonner, Lucide Icons, Vite

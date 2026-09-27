@@ -22,6 +22,14 @@ import {
   Database,
   TrendingUp,
   Zap,
+  Sparkles,
+  Pin,
+  Play,
+  Edit3,
+  AlertTriangle,
+  Gauge,
+  Globe,
+  Bookmark,
 } from "lucide-react";
 import {
   BarChart,
@@ -42,6 +50,16 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import type { QueryResponseData } from "../types";
+import { useChat } from "../context/ChatContext";
+import {
+  executeRawUserSql,
+  optimizeSql,
+  translateSql,
+  saveQueryTemplate,
+  formatSql,
+  generateNarrative,
+  translateExplanation,
+} from "../services/api";
 
 interface QueryResponseCardProps {
   data: QueryResponseData;
@@ -56,11 +74,46 @@ const CHART_COLORS = [
   "#fbbf24", // Amber
 ];
 
-export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) => {
+export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: initialData }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const { pinCard, dbConfig } = useChat();
+
+  const [cardData, setCardData] = useState<QueryResponseData>(initialData);
   const [copied, setCopied] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  // Playground state
+  const [isEditingSql, setIsEditingSql] = useState(false);
+  const [editedSql, setEditedSql] = useState(initialData.sql_query || "");
+  const [isExecutingPlayground, setIsExecutingPlayground] = useState(false);
+
+  // Optimizer & Enterprise state
+  const [showOptimizer, setShowOptimizer] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizerResult, setOptimizerResult] = useState<import("../types").SqlOptimizationResult | null>(null);
+  const [targetDialect, setTargetDialect] = useState("postgres");
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+
+  // Dynamic Chart & Palette Customizer State
+  const [activeChartType, setActiveChartType] = useState<"bar" | "line" | "pie" | "table">(
+    initialData.chart_type === "none" ? "table" : (initialData.chart_type || "table")
+  );
+  const [activePalette, setActivePalette] = useState<"cyan" | "emerald" | "sunset" | "purple">("cyan");
+
+  const paletteColors = useMemo(() => {
+    switch (activePalette) {
+      case "emerald":
+        return ["#10b981", "#34d399", "#059669", "#6ee7b7", "#047857", "#a7f3d0"];
+      case "sunset":
+        return ["#f59e0b", "#fbbf24", "#d97706", "#f97316", "#ef4444", "#fde68a"];
+      case "purple":
+        return ["#8b5cf6", "#a855f7", "#c084fc", "#7c3aed", "#e879f9", "#ddd6fe"];
+      default:
+        return ["#548CA8", "#818cf8", "#476072", "#34d399", "#c084fc", "#fbbf24"];
+    }
+  }, [activePalette]);
 
   // Table State
   const [tableSearch, setTableSearch] = useState("");
@@ -73,12 +126,112 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
     question,
     sql_query: sqlQuery,
     query_result: queryResult,
-    chart_type: chartType,
     explanation,
+    executive_summary: executiveSummary,
+    anomalies,
     retry_count: retryCount,
     error_trace: errorTrace,
     execution_time_ms: executionTimeMs,
-  } = data;
+  } = cardData;
+
+  const handleOptimizeSql = async () => {
+    if (!sqlQuery) return;
+    setIsOptimizing(true);
+    try {
+      const res = await optimizeSql(sqlQuery, dbConfig?.db_type || "sqlite");
+      setOptimizerResult(res);
+      setShowOptimizer(!showOptimizer);
+      if (!showOptimizer) {
+        toast.success(`Optimizer Score: ${res.performance_score}/100`);
+      }
+    } catch {
+      toast.error("Failed to run AI SQL Optimizer.");
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  const handleTranslateDialect = async (dialect: string) => {
+    if (!editedSql) return;
+    setTargetDialect(dialect);
+    setIsTranslating(true);
+    try {
+      const res = await translateSql(editedSql, dialect, dbConfig?.db_type || "sqlite");
+      if (res.translated_sql) {
+        setEditedSql(res.translated_sql);
+        toast.success(`Translated to ${dialect.toUpperCase()}!`);
+      }
+    } catch {
+      toast.error("Failed to translate SQL dialect.");
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const [narrativeStory, setNarrativeStory] = useState<string | null>(null);
+  const [isGeneratingNarrative, setIsGeneratingNarrative] = useState(false);
+  const [translatedInsight, setTranslatedInsight] = useState<{ text: string; lang: string } | null>(null);
+  const [isTranslatingInsight, setIsTranslatingInsight] = useState(false);
+
+  const handleTranslateInsight = async (targetLang: "gu" | "hi") => {
+    if (!explanation) return;
+    setIsTranslatingInsight(true);
+    try {
+      const res = await translateExplanation(explanation, targetLang);
+      if (res.translated_text) {
+        const langName = targetLang === "gu" ? "Gujarati (ગુજરાતી)" : "Hindi (हिंदी)";
+        setTranslatedInsight({ text: res.translated_text, lang: langName });
+        toast.success(`Business Insight translated into ${langName}!`);
+      }
+    } catch {
+      toast.error("Translation failed.");
+    } finally {
+      setIsTranslatingInsight(false);
+    }
+  };
+
+  const handleFormatSql = async () => {
+    if (!editedSql) return;
+    const res = await formatSql(editedSql, dbConfig?.db_type || "sqlite");
+    if (res.formatted_sql) {
+      setEditedSql(res.formatted_sql);
+      toast.success("SQL formatted & beautified!");
+    }
+  };
+
+  const handleFetchNarrative = async () => {
+    if (!queryResult || queryResult.length === 0) return;
+    setIsGeneratingNarrative(true);
+    try {
+      const text = await generateNarrative(question, sqlQuery || "", queryResult);
+      setNarrativeStory(text);
+      toast.success("Executive data narrative generated!");
+    } catch {
+      toast.error("Failed to generate data narrative.");
+    } finally {
+      setIsGeneratingNarrative(false);
+    }
+  };
+
+  const handleBookmarkQuery = async () => {
+    if (!sqlQuery || !question) return;
+    setIsBookmarking(true);
+    try {
+      const saved = await saveQueryTemplate(
+        question.slice(0, 35),
+        question,
+        sqlQuery,
+        "Executive"
+      );
+      if (saved) {
+        toast.success("Query bookmarked to Saved Queries Library!");
+      }
+    } catch {
+      toast.error("Failed to bookmark query.");
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
 
   const isForbidden =
     sqlQuery === "FORBIDDEN" ||
@@ -112,11 +265,26 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleRunPlaygroundSql = async () => {
+    if (!editedSql.trim() || isExecutingPlayground) return;
+    setIsExecutingPlayground(true);
+    try {
+      const res = await executeRawUserSql(editedSql.trim(), dbConfig, question);
+      setCardData(res);
+      setIsEditingSql(false);
+      toast.success("Custom SQL executed cleanly!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to execute custom SQL.");
+    } finally {
+      setIsExecutingPlayground(false);
+    }
+  };
+
   const exportToCSV = () => {
     if (!results || results.length === 0) return;
     try {
       const headers = keys.join(",");
-      const rows = results.map((row) =>
+      const rows = results.map((row: any) =>
         keys.map((k) => `"${String(row[k] ?? "").replace(/"/g, '""')}"`).join(",")
       );
       const csvContent =
@@ -166,11 +334,37 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
       pdf.addImage(imgData, "PNG", 10, 10, imgWidth, renderHeight);
       const filename = `${getSanitizedBaseName()}.pdf`;
       pdf.save(filename);
-      toast.success(`Exported PDF: ${filename}`);
+      toast.success(`Exported PDF Report: ${filename}`);
     } catch {
       toast.error("Failed to generate PDF report.");
     } finally {
       setIsExportingPdf(false);
+    }
+  };
+
+  const handleCopyMarkdown = () => {
+    if (!results || results.length === 0) return;
+    try {
+      const headerRow = `| ${keys.join(" | ")} |`;
+      const dividerRow = `| ${keys.map(() => "---").join(" | ")} |`;
+      const dataRows = results
+        .map((row: any) => `| ${keys.map((k) => String(row[k] ?? "")).join(" | ")} |`)
+        .join("\n");
+      const mdTable = `${headerRow}\n${dividerRow}\n${dataRows}`;
+      navigator.clipboard.writeText(mdTable);
+      toast.success("Table copied as Markdown!");
+    } catch {
+      toast.error("Failed to copy Markdown.");
+    }
+  };
+
+  const handleCopyJson = () => {
+    if (!results || results.length === 0) return;
+    try {
+      navigator.clipboard.writeText(JSON.stringify(results, null, 2));
+      toast.success("Data copied as JSON!");
+    } catch {
+      toast.error("Failed to copy JSON.");
     }
   };
 
@@ -256,7 +450,32 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
             </span>
           )}
 
-          {/* Action Buttons */}
+          {/* Pin to Live Dashboard */}
+          <button
+            onClick={() => pinCard(cardData)}
+            className="flex items-center gap-1 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-[#548CA8] hover:text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
+            title="Pin to Live Dashboard"
+          >
+            <Pin className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Pin</span>
+          </button>
+
+          {/* Edit SQL Playground Toggle */}
+          {sqlQuery && !isForbidden && (
+            <button
+              onClick={() => {
+                setEditedSql(sqlQuery);
+                setIsEditingSql(!isEditingSql);
+              }}
+              className="flex items-center gap-1 text-xs bg-[#1E293B] hover:bg-[#476072] text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
+              title="Edit SQL Query"
+            >
+              <Edit3 className="w-3.5 h-3.5 text-[#548CA8]" />
+              <span className="hidden sm:inline">{isEditingSql ? "Cancel" : "Edit SQL"}</span>
+            </button>
+          )}
+
+          {/* Copy SQL */}
           {sqlQuery && !isForbidden && (
             <button
               onClick={handleCopySql}
@@ -268,16 +487,62 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
               ) : (
                 <Copy className="w-3.5 h-3.5 text-[#548CA8]" />
               )}
-              <span className="hidden sm:inline">{copied ? "Copied" : "Copy SQL"}</span>
+              <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
+            </button>
+          )}
+
+          {/* AI Query Optimizer Toggle */}
+          {sqlQuery && !isForbidden && (
+            <button
+              onClick={handleOptimizeSql}
+              disabled={isOptimizing}
+              className="flex items-center gap-1 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-indigo-400 hover:text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-indigo-500/30 cursor-pointer transition-colors"
+              title="AI Query Performance Optimizer"
+            >
+              {isOptimizing ? (
+                <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+              ) : (
+                <Gauge className="w-3.5 h-3.5 text-indigo-400" />
+              )}
+              <span className="hidden sm:inline">Optimizer</span>
+            </button>
+          )}
+
+          {/* Bookmark Query */}
+          {sqlQuery && !isForbidden && (
+            <button
+              onClick={handleBookmarkQuery}
+              disabled={isBookmarking}
+              className="flex items-center gap-1 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-amber-400 hover:text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-amber-500/30 cursor-pointer transition-colors"
+              title="Bookmark to Saved Queries Library"
+            >
+              <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Bookmark</span>
             </button>
           )}
 
           {results.length > 0 && (
             <>
               <button
+                onClick={handleCopyMarkdown}
+                className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#476072] text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
+                title="Copy Table as Markdown"
+              >
+                <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="hidden sm:inline">MD</span>
+              </button>
+              <button
+                onClick={handleCopyJson}
+                className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#476072] text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
+                title="Copy Data as JSON"
+              >
+                <Code className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">JSON</span>
+              </button>
+              <button
                 onClick={exportToCSV}
                 className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#476072] text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
-                title="Export CSV"
+                title="Export CSV / Excel Data"
               >
                 <Download className="w-3.5 h-3.5 text-[#548CA8]" />
                 <span className="hidden sm:inline">CSV</span>
@@ -286,7 +551,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
                 onClick={exportToPDF}
                 disabled={isExportingPdf}
                 className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#476072] disabled:opacity-50 text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
-                title="Export PDF"
+                title="Export PDF Report"
               >
                 {isExportingPdf ? (
                   <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
@@ -300,7 +565,69 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
         </div>
       </div>
 
-      {/* 2. SECURITY ALERT OR SYNTHESIZED SQL QUERY */}
+      {/* 1.5 DATA ANOMALY ALERT BANNER */}
+      {anomalies && anomalies.length > 0 && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-950/40 p-3.5 text-amber-200">
+          <div className="flex items-center space-x-2 text-xs font-bold text-amber-400">
+            <AlertTriangle className="h-4 w-4 text-amber-400" />
+            <span>Automated Data Quality Anomaly Alert</span>
+          </div>
+          <div className="mt-2 space-y-1 pl-6">
+            {anomalies.map((a: any, idx: number) => (
+              <p key={idx} className="text-xs text-amber-300/90 font-mono">
+                • {a.message}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 1.6 AI QUERY OPTIMIZER PANEL */}
+      {showOptimizer && optimizerResult && (
+        <div className="rounded-xl border border-indigo-500/40 bg-slate-900/90 p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div className="flex items-center space-x-2">
+              <Gauge className="h-5 w-5 text-indigo-400" />
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                AI SQL Performance Optimizer & Tuning Plan
+              </span>
+            </div>
+            <div className="flex items-center space-x-3 text-xs">
+              <span className="text-slate-400">
+                Complexity: <strong className="text-indigo-300">{optimizerResult.complexity_score}</strong>
+              </span>
+              <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 font-bold text-emerald-400 border border-emerald-500/20">
+                Performance Score: {optimizerResult.performance_score}/100
+              </span>
+            </div>
+          </div>
+          <div className="space-y-1.5 pl-2">
+            {optimizerResult.recommendations.map((rec: string, i: number) => (
+              <div key={i} className="flex items-start space-x-2 text-xs text-slate-300">
+                <span className="text-indigo-400 font-bold">•</span>
+                <span>{rec}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 2. EXECUTIVE SUMMARY HIGHLIGHTS */}
+      {executiveSummary && executiveSummary.length > 0 && !isForbidden && (
+        <div className="p-3 bg-[#1E293B] border border-[#548CA8]/40 rounded-xl space-y-1.5 text-xs text-[#EEEEEE]">
+          <div className="flex items-center gap-2 text-[#548CA8] font-bold text-xs">
+            <Sparkles className="w-4 h-4 text-[#548CA8]" />
+            <span>AI EXECUTIVE SUMMARY & KEY INSIGHTS</span>
+          </div>
+          <ul className="space-y-1 text-slate-300 list-disc list-inside text-[11px] leading-relaxed">
+            {executiveSummary.map((bullet: string, idx: number) => (
+              <li key={idx}>{bullet}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 3. SECURITY ALERT OR SYNTHESIZED SQL QUERY */}
       {isForbidden ? (
         <div className="p-4 bg-rose-950/80 border-2 border-rose-600/80 rounded-xl space-y-2 text-rose-200 text-xs shadow-2xl">
           <div className="flex items-center gap-2 text-sm font-bold text-rose-400">
@@ -326,10 +653,70 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
               </div>
             </div>
 
-            {/* Formatted Code Block */}
-            <pre className="p-3 bg-[#1E293B] rounded-xl text-emerald-400 font-mono text-xs border border-[#476072]/60 leading-relaxed whitespace-pre-wrap break-words overflow-x-hidden shadow-inner">
-              <code>{sqlQuery}</code>
-            </pre>
+            {/* Interactive SQL Playground Mode */}
+            {isEditingSql ? (
+              <div className="space-y-2 bg-[#1E293B] p-3 rounded-xl border border-[#548CA8]/50">
+                <textarea
+                  value={editedSql}
+                  onChange={(e) => setEditedSql(e.target.value)}
+                  rows={4}
+                  className="w-full bg-[#0f172a] text-emerald-400 font-mono text-xs p-3 rounded-lg border border-[#476072] focus:outline-none focus:border-[#548CA8]"
+                />
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-700/60 pt-2">
+                  <div className="flex items-center space-x-2">
+                    <Globe className="w-3.5 h-3.5 text-indigo-400" />
+                    <span className="text-[11px] text-slate-400">Translate Dialect:</span>
+                    <select
+                      value={targetDialect}
+                      onChange={(e) => handleTranslateDialect(e.target.value)}
+                      disabled={isTranslating}
+                      className="bg-[#0f172a] text-xs text-indigo-300 font-mono rounded border border-slate-700 px-2 py-1 focus:outline-none"
+                    >
+                      <option value="postgres">PostgreSQL</option>
+                      <option value="mysql">MySQL</option>
+                      <option value="sqlite">SQLite</option>
+                      <option value="snowflake">Snowflake</option>
+                      <option value="bigquery">BigQuery</option>
+                      <option value="oracle">Oracle</option>
+                      <option value="tsql">SQL Server</option>
+                    </select>
+                    {isTranslating && <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleFormatSql}
+                      className="px-2.5 py-1.5 text-xs text-indigo-300 bg-indigo-950/60 hover:bg-indigo-900 border border-indigo-500/30 rounded-lg cursor-pointer flex items-center gap-1"
+                    >
+                      <Sparkles className="w-3 h-3 text-indigo-400" />
+                      <span>Format SQL</span>
+                    </button>
+                    <button
+                      onClick={() => setIsEditingSql(false)}
+                      className="px-3 py-1.5 text-xs text-slate-300 bg-[#334257] hover:bg-[#476072] rounded-lg cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleRunPlaygroundSql}
+                      disabled={isExecutingPlayground}
+                      className="px-3 py-1.5 text-xs text-[#EEEEEE] font-bold bg-[#548CA8] hover:bg-[#476072] rounded-lg flex items-center gap-1.5 cursor-pointer shadow-md"
+                    >
+                      {isExecutingPlayground ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Play className="w-3.5 h-3.5" />
+                      )}
+                      <span>Run Custom SQL</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Formatted Code Block */
+              <pre className="p-3 bg-[#1E293B] rounded-xl text-emerald-400 font-mono text-xs border border-[#476072]/60 leading-relaxed whitespace-pre-wrap break-words overflow-x-hidden shadow-inner">
+                <code>{sqlQuery}</code>
+              </pre>
+            )}
 
             {/* Explain Logic Toggle */}
             {explanation && (
@@ -356,8 +743,73 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
 
       {/* 3. BUSINESS INSIGHT BAR */}
       {explanation && !isForbidden && (
-        <div className="p-3 bg-[#1E293B]/80 rounded-xl text-xs text-[#EEEEEE] border border-[#548CA8]/30 leading-relaxed shadow-inner">
-          💡 <span className="font-semibold text-[#548CA8]">Business Insight:</span> {explanation}
+        <div className="p-3 bg-[#1E293B]/80 rounded-xl text-xs text-[#EEEEEE] border border-[#548CA8]/30 leading-relaxed shadow-inner space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 font-semibold text-[#548CA8]">
+              <Sparkles className="w-3.5 h-3.5 text-[#548CA8]" />
+              <span>Business Insight</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-[10px]">
+              <span className="text-slate-400">Translate Insight:</span>
+              <button
+                onClick={() => handleTranslateInsight("gu")}
+                disabled={isTranslatingInsight}
+                className="px-2 py-0.5 rounded bg-sky-950/60 border border-sky-700/50 hover:border-sky-400 text-sky-300 font-semibold cursor-pointer transition-colors"
+              >
+                Gujarati (ગુજરાતી)
+              </button>
+              <button
+                onClick={() => handleTranslateInsight("hi")}
+                disabled={isTranslatingInsight}
+                className="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-700/50 hover:border-amber-400 text-amber-300 font-semibold cursor-pointer transition-colors"
+              >
+                Hindi (हिंदी)
+              </button>
+              {isTranslatingInsight && <Loader2 className="w-3 h-3 text-sky-400 animate-spin" />}
+            </div>
+          </div>
+
+          <p className="text-slate-200">{explanation}</p>
+
+          {translatedInsight && (
+            <div className="p-2.5 bg-[#0f172a] border border-[#548CA8]/40 rounded-lg text-xs text-emerald-300 font-medium space-y-0.5">
+              <span className="text-[10px] text-[#548CA8] uppercase font-bold tracking-wider block">
+                {translatedInsight.lang} Translation:
+              </span>
+              <p className="text-emerald-200 font-sans">{translatedInsight.text}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3.5 AI DATA STORYTELLER NARRATIVE */}
+      {results.length > 0 && !isForbidden && (
+        <div className="space-y-2">
+          {!narrativeStory ? (
+            <button
+              onClick={handleFetchNarrative}
+              disabled={isGeneratingNarrative}
+              className="flex items-center gap-1.5 text-xs text-purple-300 bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 px-3 py-1.5 rounded-xl cursor-pointer transition-colors"
+            >
+              {isGeneratingNarrative ? (
+                <Loader2 className="w-3.5 h-3.5 text-purple-400 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              )}
+              <span>Generate AI Data Storyteller Narrative</span>
+            </button>
+          ) : (
+            <div className="p-3.5 bg-purple-950/40 border border-purple-500/40 rounded-xl space-y-1.5 text-xs text-purple-200">
+              <div className="flex items-center space-x-2 font-bold text-purple-400 text-xs">
+                <Sparkles className="h-4 w-4 text-purple-400" />
+                <span>Executive Data Storyteller Narrative</span>
+              </div>
+              <p className="text-purple-200/90 leading-relaxed font-sans text-xs">
+                {narrativeStory}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -387,8 +839,42 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
               ))}
             </div>
           ) : (
-            <div className="w-full">
-              {chartType === "bar" && (
+            <div className="w-full space-y-3">
+              {/* Dynamic Chart & Palette Control Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-[#1E293B] p-2 rounded-xl border border-[#476072]/50 text-xs">
+                <div className="flex items-center space-x-1">
+                  <span className="text-[11px] text-slate-400 font-semibold mr-1">View:</span>
+                  {(["bar", "line", "pie", "table"] as const).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setActiveChartType(type)}
+                      className={`px-2.5 py-1 rounded-lg font-semibold uppercase text-[10px] transition-colors ${
+                        activeChartType === type
+                          ? "bg-[#548CA8] text-white shadow"
+                          : "text-slate-400 hover:text-white hover:bg-slate-800"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <span className="text-[11px] text-slate-400 font-semibold">Palette:</span>
+                  <select
+                    value={activePalette}
+                    onChange={(e) => setActivePalette(e.target.value as any)}
+                    className="bg-[#0f172a] text-xs text-[#548CA8] rounded border border-slate-700 px-2 py-0.5 focus:outline-none"
+                  >
+                    <option value="cyan">Oceanic Cyan</option>
+                    <option value="emerald">Emerald Matrix</option>
+                    <option value="sunset">Sunset Amber</option>
+                    <option value="purple">Violet Aurora</option>
+                  </select>
+                </div>
+              </div>
+
+              {activeChartType === "bar" && (
                 <div className="h-64 sm:h-72 w-full pt-1">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={results}>
@@ -409,7 +895,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
                         <Bar
                           key={key}
                           dataKey={key}
-                          fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                          fill={paletteColors[idx % paletteColors.length]}
                           radius={[6, 6, 0, 0]}
                         />
                       ))}
@@ -418,7 +904,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
                 </div>
               )}
 
-              {chartType === "line" && (
+              {activeChartType === "line" && (
                 <div className="h-64 sm:h-72 w-full pt-1">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={results}>
@@ -450,7 +936,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
                 </div>
               )}
 
-              {chartType === "pie" && (
+              {activeChartType === "pie" && (
                 <div className="h-64 sm:h-72 w-full pt-1">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -472,10 +958,10 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
                         outerRadius={85}
                         label
                       >
-                        {results.map((_, index) => (
+                        {results.map((_: any, index: number) => (
                           <Cell
                             key={`cell-${index}`}
-                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                            fill={paletteColors[index % paletteColors.length]}
                           />
                         ))}
                       </Pie>
@@ -485,7 +971,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data }) =>
               )}
 
               {/* ENTERPRISE DATA TABLE */}
-              {(chartType === "table" || chartType === "none") && (
+              {activeChartType === "table" && (
                 <div className="space-y-2.5 pt-1">
                   {/* Table Search & Controls */}
                   <div className="flex flex-wrap items-center justify-between gap-2 bg-[#1E293B]/80 p-2 rounded-xl border border-[#476072]/60">
