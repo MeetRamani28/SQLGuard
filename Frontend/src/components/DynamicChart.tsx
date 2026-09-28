@@ -40,13 +40,12 @@ interface DynamicChartProps {
 }
 
 const COLORS = [
-  "#38bdf8", // Sky Blue
-  "#818cf8", // Indigo
-  "#c084fc", // Purple
-  "#34d399", // Emerald
-  "#f472b6", // Pink
-  "#fbbf24", // Amber
-  "#fb7185", // Rose
+  "#3ECF8E", // Series 1: Supabase Emerald Green
+  "#38BDF8", // Series 2: Sky Blue
+  "#A855F7", // Series 3: Purple Accent
+  "#F59E0B", // Series 4: Amber Gold
+  "#F43F5E", // Series 5: Rose Red
+  "#818CF8", // Series 6: Indigo Accent
 ];
 
 export const DynamicChart: React.FC<DynamicChartProps> = ({
@@ -67,16 +66,58 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className="p-8 text-center text-slate-400 bg-slate-900/60 rounded-2xl border border-slate-800 shadow-xl space-y-2">
-        <Database className="w-8 h-8 text-slate-600 mx-auto" />
+      <div className="p-8 text-center text-[#3ECF8E] bg-[#232323] rounded-2xl border border-[#333333] shadow-sm space-y-2">
+        <Database className="w-8 h-8 text-[#71717A] mx-auto" />
         <p className="text-xs">No data records returned for this query.</p>
       </div>
     );
   }
 
-  const keys = Object.keys(data[0]);
-  const xAxisKey = keys[0];
-  const valueKeys = keys.slice(1);
+  const keys = useMemo(() => (data && data.length > 0 ? Object.keys(data[0]) : []), [data]);
+
+  const { labelKey, numericKeys } = useMemo(() => {
+    if (!data || data.length === 0) return { labelKey: "", numericKeys: [] };
+
+    const allKeys = Object.keys(data[0]);
+
+    const stringKeys = allKeys.filter((key) =>
+      data.some((row) => {
+        const val = row[key];
+        return typeof val === "string" && isNaN(Number(val));
+      })
+    );
+
+    const numKeys = allKeys.filter((key) =>
+      data.some((row) => {
+        const val = row[key];
+        if (val === null || val === undefined) return false;
+        if (typeof val === "boolean") return false;
+        return typeof val === "number" || (!isNaN(Number(val)) && String(val).trim() !== "");
+      })
+    );
+
+    const label = stringKeys.length > 0 ? stringKeys[0] : allKeys[0] || "";
+
+    const isIdKey = (k: string) =>
+      k.toLowerCase() === "id" || k.toLowerCase().endsWith("_id") || k.toLowerCase().endsWith("id");
+
+    let validNumeric = numKeys;
+    if (validNumeric.includes(label) && validNumeric.length > 1) {
+      validNumeric = validNumeric.filter((k) => k !== label);
+    }
+    const nonIdNumKeys = validNumeric.filter((k) => !isIdKey(k));
+    const idNumKeys = validNumeric.filter((k) => isIdKey(k));
+    const prioritizedNumeric = nonIdNumKeys.length > 0 ? [...nonIdNumKeys, ...idNumKeys] : validNumeric;
+
+    return {
+      labelKey: label,
+      numericKeys: prioritizedNumeric.length > 0 ? prioritizedNumeric : allKeys.slice(1),
+    };
+  }, [data]);
+
+  const xAxisKey = labelKey || keys[0];
+  const valueKeys = numericKeys;
+  const activeMetricKey = numericKeys[0] || keys[1] || keys[0] || "";
 
   // Check if result is a single metric KPI card (e.g. 1 row, <= 2 columns)
   const isKpiMetric = data.length === 1 && keys.length <= 2;
@@ -122,7 +163,7 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        backgroundColor: "#0b0f17",
+        backgroundColor: "#121212",
         logging: false,
       });
 
@@ -205,13 +246,13 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
   return (
     <div
       ref={chartRef}
-      className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-6 shadow-2xl space-y-5 backdrop-blur-md"
+      className="bg-[#232323] border border-[#333333] rounded-2xl p-6 shadow-md space-y-5"
     >
       {/* Action Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {explanation ? (
-          <div className="p-3 bg-gradient-to-r from-sky-950/40 via-indigo-950/30 to-slate-900 rounded-xl text-xs text-sky-300 border border-sky-500/20 flex-1 leading-relaxed shadow-inner">
-            💡 <span className="font-semibold text-sky-200">Business Insight:</span>{" "}
+          <div className="p-3 bg-[rgba(62,207,142,0.15)] rounded-xl text-xs text-[#FFFFFF] border border-[#3ECF8E]/30 flex-1 leading-relaxed shadow-sm">
+            💡 <span className="font-bold text-[#3ECF8E]">Business Insight:</span>{" "}
             {explanation}
           </div>
         ) : (
@@ -221,22 +262,22 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={exportToCSV}
-            className="flex items-center gap-1.5 text-xs bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer transition-all shadow-sm font-medium"
+            className="flex items-center gap-1.5 text-xs bg-[#2C2C2C] hover:bg-[#333333] text-[#FFFFFF] px-3.5 py-2 rounded-xl border border-[#333333] cursor-pointer transition-all shadow-sm font-medium"
             title="Download CSV"
           >
-            <Download className="w-3.5 h-3.5 text-sky-400" />
+            <Download className="w-3.5 h-3.5 text-[#3ECF8E]" />
             <span>Export CSV</span>
           </button>
           <button
             onClick={exportToPDF}
             disabled={isExportingPdf}
-            className="flex items-center gap-1.5 text-xs bg-slate-800/90 hover:bg-slate-700/90 disabled:opacity-50 text-slate-200 px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer transition-all shadow-sm font-medium"
+            className="flex items-center gap-1.5 text-xs bg-[#2C2C2C] hover:bg-[#333333] disabled:opacity-50 text-[#FFFFFF] px-3.5 py-2 rounded-xl border border-[#333333] cursor-pointer transition-all shadow-sm font-medium"
             title="Download PDF"
           >
             {isExportingPdf ? (
-              <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 text-[#3ECF8E] animate-spin" />
             ) : (
-              <FileText className="w-3.5 h-3.5 text-emerald-400" />
+              <FileText className="w-3.5 h-3.5 text-[#3ECF8E]" />
             )}
             <span>{isExportingPdf ? "Generating..." : "Export PDF"}</span>
           </button>
@@ -249,17 +290,17 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
           {keys.map((k, idx) => (
             <div
               key={k}
-              className="p-5 bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950/40 border border-sky-500/30 rounded-2xl shadow-xl flex items-center justify-between"
+              className="p-5 bg-[#2C2C2C] border border-[#333333] rounded-2xl shadow-sm flex items-center justify-between"
             >
               <div className="space-y-1">
-                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">
+                <span className="text-xs uppercase font-bold text-[#3ECF8E] tracking-wider block">
                   {k.replace(/_/g, " ")}
                 </span>
-                <span className="text-3xl font-black bg-gradient-to-r from-sky-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent font-mono">
+                <span className="text-3xl font-black text-[#3ECF8E] font-mono">
                   {String(data[0][k] ?? "0")}
                 </span>
               </div>
-              <div className="p-3 bg-sky-500/10 border border-sky-500/30 rounded-xl text-sky-400">
+              <div className="p-3 bg-[rgba(62,207,142,0.15)] border border-[#3ECF8E]/30 rounded-xl text-[#3ECF8E]">
                 {idx === 0 ? <TrendingUp className="w-6 h-6" /> : <Database className="w-6 h-6" />}
               </div>
             </div>
@@ -272,17 +313,17 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
             <div className="h-80 w-full pt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey={xAxisKey} stroke="#94a3b8" fontSize={12} />
-                  <YAxis stroke="#94a3b8" fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
+                  <XAxis dataKey={xAxisKey} stroke="#3ECF8E" fontSize={12} />
+                  <YAxis stroke="#3ECF8E" fontSize={12} />
                   <Tooltip
-                    cursor={{ fill: "rgba(56, 189, 248, 0.08)" }}
+                    cursor={{ fill: "rgba(0, 240, 255, 0.08)" }}
                     contentStyle={{
-                      backgroundColor: "#0f172a",
-                      borderColor: "#334155",
-                      color: "#f8fafc",
+                      backgroundColor: "#232323",
+                      borderColor: "#333333",
+                      color: "#FFFFFF",
                       borderRadius: "12px",
-                      boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.5)",
+                      boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
                     }}
                   />
                   <Legend />
@@ -303,15 +344,15 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
             <div className="h-80 w-full pt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey={xAxisKey} stroke="#94a3b8" fontSize={12} />
-                  <YAxis stroke="#94a3b8" fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
+                  <XAxis dataKey={xAxisKey} stroke="#3ECF8E" fontSize={12} />
+                  <YAxis stroke="#3ECF8E" fontSize={12} />
                   <Tooltip
-                    cursor={{ stroke: "#38bdf8", strokeWidth: 1, strokeDasharray: "4 4" }}
+                    cursor={{ stroke: "#3ECF8E", strokeWidth: 1, strokeDasharray: "4 4" }}
                     contentStyle={{
-                      backgroundColor: "#0f172a",
-                      borderColor: "#334155",
-                      color: "#f8fafc",
+                      backgroundColor: "#232323",
+                      borderColor: "#333333",
+                      color: "#FFFFFF",
                       borderRadius: "12px",
                     }}
                   />
@@ -336,22 +377,28 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Tooltip
+                    formatter={(value: any, name: any) => [
+                      typeof value === "number" ? value.toLocaleString() : value,
+                      name || activeMetricKey,
+                    ]}
                     contentStyle={{
-                      backgroundColor: "#0f172a",
-                      borderColor: "#334155",
-                      color: "#f8fafc",
+                      backgroundColor: "#232323",
+                      borderColor: "#333333",
+                      color: "#FFFFFF",
                       borderRadius: "12px",
                     }}
                   />
                   <Legend />
                   <Pie
                     data={data}
-                    dataKey={valueKeys[0] || keys[1]}
-                    nameKey={xAxisKey}
+                    dataKey={activeMetricKey}
+                    nameKey={labelKey}
                     cx="50%"
                     cy="50%"
                     outerRadius={105}
-                    label
+                    label={({ name, percent }: any) =>
+                      `${name ? String(name).slice(0, 14) : ""}: ${(((percent as number) || 0) * 100).toFixed(0)}%`
+                    }
                   >
                     {data.map((_, index) => (
                       <Cell
@@ -369,9 +416,9 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
           {(chartType === "table" || chartType === "none") && (
             <div className="space-y-3 pt-2">
               {/* Table Controls Header */}
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-[#2C2C2C] p-2.5 rounded-xl border border-[#333333]">
                 <div className="relative flex-1 max-w-xs">
-                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+                  <Search className="w-3.5 h-3.5 text-[#3ECF8E] absolute left-3 top-2.5" />
                   <input
                     type="text"
                     value={tableSearch}
@@ -380,12 +427,12 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
                       setCurrentPage(1);
                     }}
                     placeholder="Search results..."
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                    className="w-full bg-[#232323] border border-[#333333] rounded-lg pl-8 pr-3 py-1 text-xs text-[#FFFFFF] placeholder-[#71717A] focus:outline-none focus:border-[#3ECF8E]"
                   />
                 </div>
 
-                <div className="flex items-center gap-3 text-xs text-slate-400">
-                  <span className="text-[11px] font-mono text-slate-500">
+                <div className="flex items-center gap-3 text-xs text-[#3ECF8E]">
+                  <span className="text-[11px] font-mono text-[#3ECF8E]">
                     Showing {filteredAndSortedData.length} records
                   </span>
                   <div className="flex items-center gap-1">
@@ -396,7 +443,7 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
                         setRowsPerPage(Number(e.target.value));
                         setCurrentPage(1);
                       }}
-                      className="bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-xs text-slate-200 focus:outline-none"
+                      className="bg-[#232323] border border-[#333333] rounded px-2 py-0.5 text-xs text-[#FFFFFF] focus:outline-none"
                     >
                       <option value={5}>5</option>
                       <option value={10}>10</option>
@@ -408,44 +455,44 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
               </div>
 
               {/* Table Element */}
-              <div className="overflow-x-auto border border-slate-800/90 rounded-xl bg-slate-950/60 shadow-inner">
-                <table className="w-full text-xs text-left text-slate-300 border-collapse">
-                  <thead className="bg-slate-900/90 text-slate-400 uppercase font-semibold border-b border-slate-800 sticky top-0">
+              <div className="overflow-x-auto border border-[#333333] rounded-xl bg-[#232323] shadow-sm">
+                <table className="w-full text-xs text-left text-[#FFFFFF] border-collapse">
+                  <thead className="bg-[#2C2C2C] text-[#3ECF8E] uppercase font-semibold border-b border-[#333333] sticky top-0">
                     <tr>
-                      <th className="p-3 text-[10px] text-slate-500 w-10">#</th>
+                      <th className="p-3 text-[10px] text-[#71717A] w-10">#</th>
                       {keys.map((key) => (
                         <th
                           key={key}
                           onClick={() => handleSort(key)}
-                          className="p-3 cursor-pointer hover:text-sky-400 transition-colors select-none"
+                          className="p-3 cursor-pointer hover:text-[#3ECF8E] transition-colors select-none"
                         >
                           <div className="flex items-center gap-1.5 font-mono">
                             <span>{key}</span>
                             {sortColumn === key ? (
                               sortDirection === "asc" ? (
-                                <ArrowUp className="w-3 h-3 text-sky-400" />
+                                <ArrowUp className="w-3 h-3 text-[#3ECF8E]" />
                               ) : (
-                                <ArrowDown className="w-3 h-3 text-sky-400" />
+                                <ArrowDown className="w-3 h-3 text-[#3ECF8E]" />
                               )
                             ) : (
-                              <ArrowUpDown className="w-3 h-3 text-slate-600 opacity-60" />
+                              <ArrowUpDown className="w-3 h-3 text-[#71717A] opacity-60" />
                             )}
                           </div>
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 font-mono">
+                  <tbody className="divide-y divide-[#333333] font-mono">
                     {paginatedData.map((row, rowIdx) => (
                       <tr
                         key={rowIdx}
-                        className="hover:bg-slate-800/50 transition-colors group"
+                        className="hover:bg-[#2C2C2C]/60 transition-colors group"
                       >
-                        <td className="p-3 text-[10px] text-slate-600 font-mono">
+                        <td className="p-3 text-[10px] text-[#71717A] font-mono">
                           {(currentPage - 1) * rowsPerPage + rowIdx + 1}
                         </td>
                         {keys.map((key) => (
-                          <td key={key} className="p-3 text-slate-200">
+                          <td key={key} className="p-3 text-[#FFFFFF]">
                             {String(row[key] ?? "")}
                           </td>
                         ))}
@@ -457,7 +504,7 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
 
               {/* Pagination Bar */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-1 px-1 text-xs text-slate-400">
+                <div className="flex items-center justify-between pt-1 px-1 text-xs text-[#3ECF8E]">
                   <span className="text-[11px] font-mono">
                     Page {currentPage} of {totalPages}
                   </span>
@@ -465,14 +512,14 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
                     <button
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="p-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 rounded-lg cursor-pointer transition-colors"
+                      className="p-1.5 bg-[#2C2C2C] hover:bg-[#333333] disabled:opacity-40 text-[#FFFFFF] rounded-lg cursor-pointer transition-colors"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-                      className="p-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 rounded-lg cursor-pointer transition-colors"
+                      className="p-1.5 bg-[#2C2C2C] hover:bg-[#333333] disabled:opacity-40 text-[#FFFFFF] rounded-lg cursor-pointer transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>

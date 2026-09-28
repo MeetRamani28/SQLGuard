@@ -25,48 +25,48 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/40 p-4 backdrop-blur-sm">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
+          className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-2xl text-[#0F172A]"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/90 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-[#E2E8F0] bg-[#F8FAFC] px-6 py-4">
             <div className="flex items-center space-x-3">
-              <div className="rounded-xl bg-cyan-500/10 p-2 text-cyan-400 border border-cyan-500/20">
+              <div className="rounded-xl bg-[#E0F2FE] p-2 text-[#0284C7] border border-[#0284C7]/30">
                 <Keyboard className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Keyboard Shortcuts & Hotkeys</h2>
-                <p className="text-xs text-slate-400">
+                <h2 className="text-xl font-bold text-[#0F172A]">Keyboard Shortcuts & Hotkeys</h2>
+                <p className="text-xs text-[#047857]">
                   Boost developer productivity with instant keyboard controls
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+              className="rounded-lg p-2 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* List of Shortcuts */}
-          <div className="p-6 space-y-3">
+          <div className="p-6 space-y-3 bg-[#FFFFFF]">
             {shortcuts.map((item, idx) => {
               const Icon = item.icon;
               return (
                 <div
                   key={idx}
-                  className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs"
+                  className="flex items-center justify-between rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-xs shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
-                    <Icon className="h-4 w-4 text-[#548CA8]" />
-                    <span className="text-slate-300 font-medium">{item.desc}</span>
+                    <Icon className="h-4 w-4 text-[#10B981]" />
+                    <span className="text-[#0F172A] font-medium">{item.desc}</span>
                   </div>
-                  <kbd className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 font-mono text-[11px] font-bold text-cyan-400 shadow-inner">
+                  <kbd className="rounded-lg border border-[#CBD5E1] bg-[#FFFFFF] px-2.5 py-1 font-mono text-[11px] font-bold text-[#0284C7] shadow-xs">
                     {item.key}
                   </kbd>
                 </div>

@@ -4,7 +4,7 @@ import {
   Check,
   Copy,
   ShieldCheck,
-  ShieldAlert,
+  Lock,
   RefreshCw,
   ChevronDown,
   ChevronUp,
@@ -21,7 +21,6 @@ import {
   ChevronRight,
   Database,
   TrendingUp,
-  Zap,
   Sparkles,
   Pin,
   Play,
@@ -65,12 +64,12 @@ interface QueryResponseCardProps {
 }
 
 const CHART_COLORS = [
-  "#548CA8", // Oceanic Steel Cyan
-  "#818cf8", // Indigo Accent
-  "#476072", // Muted Slate Blue
-  "#34d399", // Emerald
-  "#c084fc", // Purple
-  "#fbbf24", // Amber
+  "#3ECF8E", // Series 1: Burgundy Accent
+  "#8B5CF6", // Series 2: Steel Blue
+  "#F59E0B", // Series 3: Warm Gold / Ochre
+  "#8B5CF6", // Series 4: Plum
+  "#C46A3B", // Series 5: Copper / Terracotta
+  "#6B7775", // Series 6: Sage / Muted Slate
 ];
 
 export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: initialData }) => {
@@ -100,17 +99,18 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
     initialData.chart_type === "none" ? "table" : (initialData.chart_type || "table")
   );
   const [activePalette, setActivePalette] = useState<"cyan" | "emerald" | "sunset" | "purple">("cyan");
+  const [selectedMetric, setSelectedMetric] = useState<string>("");
 
   const paletteColors = useMemo(() => {
     switch (activePalette) {
       case "emerald":
-        return ["#10b981", "#34d399", "#059669", "#6ee7b7", "#047857", "#a7f3d0"];
+        return ["#10b981", "#3ECF8E", "#059669", "#6ee7b7", "#047857", "#a7f3d0"];
       case "sunset":
         return ["#f59e0b", "#fbbf24", "#d97706", "#f97316", "#ef4444", "#fde68a"];
       case "purple":
         return ["#8b5cf6", "#a855f7", "#c084fc", "#7c3aed", "#e879f9", "#ddd6fe"];
       default:
-        return ["#548CA8", "#818cf8", "#476072", "#34d399", "#c084fc", "#fbbf24"];
+        return ["#3ECF8E", "#818cf8", "#333333", "#3ECF8E", "#c084fc", "#fbbf24"];
     }
   }, [activePalette]);
 
@@ -130,7 +130,6 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
     anomalies,
     retry_count: retryCount,
     error_trace: errorTrace,
-    execution_time_ms: executionTimeMs,
   } = cardData;
 
   const handleOptimizeSql = async () => {
@@ -239,9 +238,56 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
     explanation?.toLowerCase().includes("forbidden");
 
   const results = queryResult || [];
-  const keys = results.length > 0 ? Object.keys(results[0]) : [];
-  const xAxisKey = keys[0];
-  const valueKeys = keys.slice(1);
+  const keys = useMemo(() => (results.length > 0 ? Object.keys(results[0]) : []), [results]);
+
+  const { labelKey, numericKeys } = useMemo(() => {
+    if (results.length === 0) return { labelKey: "", numericKeys: [] };
+
+    const allKeys = Object.keys(results[0]);
+
+    const stringKeys = allKeys.filter((key) =>
+      results.some((row) => {
+        const val = row[key];
+        return typeof val === "string" && isNaN(Number(val));
+      })
+    );
+
+    const numKeys = allKeys.filter((key) =>
+      results.some((row) => {
+        const val = row[key];
+        if (val === null || val === undefined) return false;
+        if (typeof val === "boolean") return false;
+        return typeof val === "number" || (!isNaN(Number(val)) && String(val).trim() !== "");
+      })
+    );
+
+    const label = stringKeys.length > 0 ? stringKeys[0] : allKeys[0] || "";
+
+    const isIdKey = (k: string) =>
+      k.toLowerCase() === "id" || k.toLowerCase().endsWith("_id") || k.toLowerCase().endsWith("id");
+
+    let validNumeric = numKeys;
+    if (validNumeric.includes(label) && validNumeric.length > 1) {
+      validNumeric = validNumeric.filter((k) => k !== label);
+    }
+    const nonIdNumKeys = validNumeric.filter((k) => !isIdKey(k));
+    const idNumKeys = validNumeric.filter((k) => isIdKey(k));
+    const prioritizedNumeric = nonIdNumKeys.length > 0 ? [...nonIdNumKeys, ...idNumKeys] : validNumeric;
+
+    return {
+      labelKey: label,
+      numericKeys: prioritizedNumeric.length > 0 ? prioritizedNumeric : allKeys.slice(1),
+    };
+  }, [results]);
+
+  const activeMetricKey = useMemo(() => {
+    if (selectedMetric && numericKeys.includes(selectedMetric)) {
+      return selectedMetric;
+    }
+    return numericKeys[0] || keys[1] || keys[0] || "";
+  }, [selectedMetric, numericKeys, keys]);
+
+  const xAxisKey = labelKey || keys[0];
 
   const isKpiMetric = results.length === 1 && keys.length <= 2;
 
@@ -523,46 +569,37 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
   return (
     <div
       ref={cardRef}
-      className="bg-[#334257]/90 border border-[#476072]/60 hover:border-[#548CA8]/50 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4 backdrop-blur-md transition-all"
+      className="bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#10B981]/50 rounded-2xl p-4 sm:p-5 shadow-md space-y-4 transition-all"
     >
       {/* 1. MASTER CARD HEADER */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#476072]/50 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E2E8F0] pb-3">
         {/* Asked Question Title */}
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <div className="p-1.5 bg-[#548CA8]/15 border border-[#548CA8]/30 rounded-lg text-[#548CA8] shrink-0">
+          <div className="p-1.5 bg-[#ECFDF5] border border-[#10B981]/30 rounded-lg text-[#10B981] shrink-0">
             <QuestionIcon className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <span className="text-[10px] uppercase tracking-wider font-bold text-[#548CA8] block">
+            <span className="text-[10px] uppercase tracking-wider font-bold text-[#047857] block">
               QUERY QUESTION
-            </span>
-            <span className="text-xs sm:text-sm font-semibold text-[#EEEEEE] truncate block">
-              {question}
             </span>
           </div>
         </div>
 
         {/* Header Badges & Actions Toolbar */}
         <div className="flex flex-wrap items-center gap-1.5 shrink-0 max-w-full">
-          {executionTimeMs !== undefined && executionTimeMs > 0 && (
-            <span className="hidden sm:flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-800/40 font-mono">
-              <Zap className="w-3 h-3 text-emerald-400" /> {executionTimeMs}ms
-            </span>
-          )}
-
           {retryCount > 0 && (
-            <span className="flex items-center gap-1 text-[11px] text-amber-400 bg-amber-950/60 px-2.5 py-1 rounded-lg border border-amber-800/40 font-mono">
-              <RefreshCw className="w-3 h-3 animate-spin" /> {retryCount}x Retry
+            <span className="flex items-center gap-1 text-[11px] text-[#D97706] bg-[#FEF3C7] px-2.5 py-1 rounded-lg border border-[#F59E0B]/30 font-mono">
+              <RefreshCw className="w-3.5 h-3.5 text-[#D97706] animate-spin" /> {retryCount}x Retrying
             </span>
           )}
 
           {/* Pin to Live Dashboard */}
           <button
             onClick={() => pinCard(cardData)}
-            className="flex items-center gap-1 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-[#548CA8] hover:text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
+            className="flex items-center gap-1 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#047857] hover:text-[#0F172A] px-2.5 py-1.5 rounded-lg border border-[#E2E8F0] cursor-pointer transition-colors"
             title="Pin to Live Dashboard"
           >
-            <Pin className="w-3.5 h-3.5" />
+            <Pin className="w-3.5 h-3.5 text-[#10B981]" />
             <span className="hidden sm:inline">Pin</span>
           </button>
 
@@ -573,10 +610,10 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                 setEditedSql(sqlQuery);
                 setIsEditingSql(!isEditingSql);
               }}
-              className="flex items-center gap-1 text-xs bg-[#1E293B] hover:bg-[#476072] text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
+              className="flex items-center gap-1 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] px-2.5 py-1.5 rounded-lg border border-[#E2E8F0] cursor-pointer transition-colors"
               title="Edit SQL Query"
             >
-              <Edit3 className="w-3.5 h-3.5 text-[#548CA8]" />
+              <Edit3 className="w-3.5 h-3.5 text-[#10B981]" />
               <span className="hidden sm:inline">{isEditingSql ? "Cancel" : "Edit SQL"}</span>
             </button>
           )}
@@ -585,13 +622,13 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
           {sqlQuery && !isForbidden && (
             <button
               onClick={handleCopySql}
-              className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#476072] text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] px-2.5 py-1.5 rounded-lg border border-[#E2E8F0] cursor-pointer transition-colors"
               title="Copy SQL"
             >
               {copied ? (
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <Check className="w-3.5 h-3.5 text-[#10B981]" />
               ) : (
-                <Copy className="w-3.5 h-3.5 text-[#548CA8]" />
+                <Copy className="w-3.5 h-3.5 text-[#10B981]" />
               )}
               <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
             </button>
@@ -602,13 +639,13 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
             <button
               onClick={handleOptimizeSql}
               disabled={isOptimizing}
-              className="flex items-center gap-1 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-indigo-400 hover:text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-indigo-500/30 cursor-pointer transition-colors"
+              className="flex items-center gap-1 text-xs bg-[#F8FAFC] hover:bg-[#ECFDF5] text-[#047857] hover:text-[#0F172A] px-2.5 py-1.5 rounded-lg border border-[#10B981]/30 cursor-pointer transition-colors"
               title="AI Query Performance Optimizer"
             >
               {isOptimizing ? (
-                <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 text-[#10B981] animate-spin" />
               ) : (
-                <Gauge className="w-3.5 h-3.5 text-indigo-400" />
+                <Gauge className="w-3.5 h-3.5 text-[#10B981]" />
               )}
               <span className="hidden sm:inline">Optimizer</span>
             </button>
@@ -619,10 +656,10 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
             <button
               onClick={handleBookmarkQuery}
               disabled={isBookmarking}
-              className="flex items-center gap-1 text-xs bg-[#1E293B] hover:bg-[#548CA8]/20 text-amber-400 hover:text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-amber-500/30 cursor-pointer transition-colors"
+              className="flex items-center gap-1 text-xs bg-[#F8FAFC] hover:bg-[#FEF3C7] text-[#D97706] px-2.5 py-1.5 rounded-lg border border-[#F59E0B]/30 cursor-pointer transition-colors"
               title="Bookmark to Saved Queries Library"
             >
-              <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+              <Bookmark className="w-3.5 h-3.5 text-[#D97706]" />
               <span className="hidden sm:inline">Bookmark</span>
             </button>
           )}
@@ -631,38 +668,38 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
             <>
               <button
                 onClick={handleCopyMarkdown}
-                className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#476072] text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
+                className="flex items-center gap-1.5 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] px-2.5 py-1.5 rounded-lg border border-[#E2E8F0] cursor-pointer transition-colors"
                 title="Copy Table as Markdown"
               >
-                <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                <FileText className="w-3.5 h-3.5 text-[#0284C7]" />
                 <span className="hidden sm:inline">MD</span>
               </button>
               <button
                 onClick={handleCopyJson}
-                className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#476072] text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
+                className="flex items-center gap-1.5 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] px-2.5 py-1.5 rounded-lg border border-[#E2E8F0] cursor-pointer transition-colors"
                 title="Copy Data as JSON"
               >
-                <Code className="w-3.5 h-3.5 text-amber-400" />
+                <Code className="w-3.5 h-3.5 text-[#D97706]" />
                 <span className="hidden sm:inline">JSON</span>
               </button>
               <button
                 onClick={exportToCSV}
-                className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#476072] text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
+                className="flex items-center gap-1.5 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] px-2.5 py-1.5 rounded-lg border border-[#E2E8F0] cursor-pointer transition-colors"
                 title="Export CSV / Excel Data"
               >
-                <Download className="w-3.5 h-3.5 text-[#548CA8]" />
+                <Download className="w-3.5 h-3.5 text-[#10B981]" />
                 <span className="hidden sm:inline">CSV</span>
               </button>
               <button
                 onClick={exportToPDF}
                 disabled={isExportingPdf}
-                className="flex items-center gap-1.5 text-xs bg-[#1E293B] hover:bg-[#476072] disabled:opacity-50 text-[#EEEEEE] px-2.5 py-1.5 rounded-lg border border-[#476072]/60 cursor-pointer transition-colors"
+                className="flex items-center gap-1.5 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] disabled:opacity-50 text-[#0F172A] px-2.5 py-1.5 rounded-lg border border-[#E2E8F0] cursor-pointer transition-colors"
                 title="Export PDF Report"
               >
                 {isExportingPdf ? (
-                  <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 text-[#10B981] animate-spin" />
                 ) : (
-                  <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                  <FileText className="w-3.5 h-3.5 text-[#10B981]" />
                 )}
                 <span className="hidden sm:inline">{isExportingPdf ? "Exporting..." : "PDF"}</span>
               </button>
@@ -690,27 +727,27 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
       {/* 1.6 AI QUERY OPTIMIZER PANEL */}
       {showOptimizer && optimizerResult && (
-        <div className="rounded-xl border border-indigo-500/40 bg-slate-900/90 p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div className="rounded-xl border border-[#3ECF8E]/40 bg-[#232323]/90 p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-[#333333] pb-2">
             <div className="flex items-center space-x-2">
-              <Gauge className="h-5 w-5 text-indigo-400" />
+              <Gauge className="h-5 w-5 text-[#3ECF8E]" />
               <span className="text-xs font-bold text-white uppercase tracking-wider">
                 AI SQL Performance Optimizer & Tuning Plan
               </span>
             </div>
             <div className="flex items-center space-x-3 text-xs">
-              <span className="text-slate-400">
-                Complexity: <strong className="text-indigo-300">{optimizerResult.complexity_score}</strong>
+              <span className="text-[#3ECF8E]">
+                Complexity: <strong className="text-[#3ECF8E] font-bold">{optimizerResult.complexity_score}</strong>
               </span>
-              <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 font-bold text-emerald-400 border border-emerald-500/20">
+              <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 font-bold text-[#3ECF8E] border border-emerald-500/20">
                 Performance Score: {optimizerResult.performance_score}/100
               </span>
             </div>
           </div>
           <div className="space-y-1.5 pl-2">
             {optimizerResult.recommendations.map((rec: string, i: number) => (
-              <div key={i} className="flex items-start space-x-2 text-xs text-slate-300">
-                <span className="text-indigo-400 font-bold">•</span>
+              <div key={i} className="flex items-start space-x-2 text-xs text-[#3ECF8E]">
+                <span className="text-[#3ECF8E] font-bold">•</span>
                 <span>{rec}</span>
               </div>
             ))}
@@ -720,12 +757,12 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
       {/* 2. EXECUTIVE SUMMARY HIGHLIGHTS */}
       {executiveSummary && executiveSummary.length > 0 && !isForbidden && (
-        <div className="p-3 bg-[#1E293B] border border-[#548CA8]/40 rounded-xl space-y-1.5 text-xs text-[#EEEEEE]">
-          <div className="flex items-center gap-2 text-[#548CA8] font-bold text-xs">
-            <Sparkles className="w-4 h-4 text-[#548CA8]" />
+        <div className="p-3 bg-[#232323] border border-[#3ECF8E]/40 rounded-xl space-y-1.5 text-xs text-[#FFFFFF]">
+          <div className="flex items-center gap-2 text-[#3ECF8E] font-bold text-xs">
+            <Sparkles className="w-4 h-4 text-[#3ECF8E]" />
             <span>AI EXECUTIVE SUMMARY & KEY INSIGHTS</span>
           </div>
-          <ul className="space-y-1 text-slate-300 list-disc list-inside text-[11px] leading-relaxed">
+          <ul className="space-y-1 text-[#3ECF8E] list-disc list-inside text-[11px] leading-relaxed">
             {executiveSummary.map((bullet: string, idx: number) => (
               <li key={idx}>{bullet}</li>
             ))}
@@ -735,48 +772,48 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
       {/* 3. SECURITY ALERT OR SYNTHESIZED SQL QUERY */}
       {isForbidden ? (
-        <div className="p-4 bg-rose-950/80 border-2 border-rose-600/80 rounded-xl space-y-2 text-rose-200 text-xs shadow-2xl">
-          <div className="flex items-center gap-2 text-sm font-bold text-rose-400">
-            <ShieldAlert className="w-5 h-5 text-rose-500 animate-pulse shrink-0" />
+        <div className="p-4 bg-[rgba(62,207,142,0.15)] border-2 border-[#F43F5E] rounded-xl space-y-2 text-[#F43F5E] text-xs shadow-md">
+          <div className="flex items-center gap-2 text-sm font-bold text-[#F43F5E]">
+            <Lock className="w-5 h-5 text-[#F43F5E] shrink-0" />
             <span>SECURITY VIOLATION BLOCKED BY AST GUARD</span>
           </div>
-          <p className="text-rose-300 font-mono text-xs leading-relaxed">
+          <p className="text-[#F43F5E]/90 font-mono text-xs leading-relaxed">
             Destructive operation (DELETE, DROP, UPDATE, INSERT, ALTER, or PRAGMA) detected and blocked. SQLGuard strictly permits read-only SELECT queries.
           </p>
         </div>
       ) : (
         sqlQuery && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+            <div className="flex items-center justify-between text-xs font-semibold text-[#3ECF8E]">
               <div className="flex items-center gap-2 flex-wrap">
-                <Code className="w-3.5 h-3.5 text-[#548CA8]" />
-                <span className="text-[11px] font-mono uppercase tracking-wider text-[#548CA8]">
+                <Code className="w-3.5 h-3.5 text-[#3ECF8E]" />
+                <span className="text-[11px] font-mono uppercase tracking-wider text-[#3ECF8E]">
                   SYNTHESIZED SQL QUERY
                 </span>
-                <span className="flex items-center gap-1 text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40 text-[10px]">
-                  <ShieldCheck className="w-3 h-3" /> AST Guard Verified
+                <span className="flex items-center gap-1 text-[#3ECF8E] bg-[rgba(62,207,142,0.15)] px-2.5 py-0.5 rounded-lg border border-[#3ECF8E]/30 text-[11px] font-semibold">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#3ECF8E]" /> Guard Passed
                 </span>
               </div>
             </div>
 
             {/* Interactive SQL Playground Mode */}
             {isEditingSql ? (
-              <div className="space-y-2 bg-[#1E293B] p-3 rounded-xl border border-[#548CA8]/50">
+              <div className="space-y-2 bg-[#232323] p-3 rounded-xl border border-[#3ECF8E]/50">
                 <textarea
                   value={editedSql}
                   onChange={(e) => setEditedSql(e.target.value)}
                   rows={4}
-                  className="w-full bg-[#0f172a] text-emerald-400 font-mono text-xs p-3 rounded-lg border border-[#476072] focus:outline-none focus:border-[#548CA8]"
+                  className="w-full bg-[#121212] text-[#3ECF8E] font-mono text-xs p-3 rounded-lg border border-[#333333] focus:outline-none focus:border-[#3ECF8E]"
                 />
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-700/60 pt-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#333333]/60 pt-2">
                   <div className="flex items-center space-x-2">
-                    <Globe className="w-3.5 h-3.5 text-indigo-400" />
-                    <span className="text-[11px] text-slate-400">Translate Dialect:</span>
+                    <Globe className="w-3.5 h-3.5 text-[#3ECF8E]" />
+                    <span className="text-[11px] text-[#3ECF8E]">Translate Dialect:</span>
                     <select
                       value={targetDialect}
                       onChange={(e) => handleTranslateDialect(e.target.value)}
                       disabled={isTranslating}
-                      className="bg-[#0f172a] text-xs text-indigo-300 font-mono rounded border border-slate-700 px-2 py-1 focus:outline-none"
+                      className="bg-[#121212] text-xs text-[#3ECF8E] font-mono rounded border border-[#333333] px-2 py-1 focus:outline-none"
                     >
                       <option value="postgres">PostgreSQL</option>
                       <option value="mysql">MySQL</option>
@@ -786,26 +823,26 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                       <option value="oracle">Oracle</option>
                       <option value="tsql">SQL Server</option>
                     </select>
-                    {isTranslating && <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />}
+                    {isTranslating && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#3ECF8E]" />}
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={handleFormatSql}
-                      className="px-2.5 py-1.5 text-xs text-indigo-300 bg-indigo-950/60 hover:bg-indigo-900 border border-indigo-500/30 rounded-lg cursor-pointer flex items-center gap-1"
+                      className="px-2.5 py-1.5 text-xs text-[#3ECF8E] bg-[#3ECF8E]/10 hover:bg-[#3ECF8E]/20 border border-[#3ECF8E]/30 rounded-lg cursor-pointer flex items-center gap-1"
                     >
-                      <Sparkles className="w-3 h-3 text-indigo-400" />
+                      <Sparkles className="w-3 h-3 text-[#3ECF8E]" />
                       <span>Format SQL</span>
                     </button>
                     <button
                       onClick={() => setIsEditingSql(false)}
-                      className="px-3 py-1.5 text-xs text-slate-300 bg-[#334257] hover:bg-[#476072] rounded-lg cursor-pointer"
+                      className="px-3 py-1.5 text-xs text-[#3ECF8E] bg-[#232323] hover:bg-[#333333] rounded-lg cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleRunPlaygroundSql}
                       disabled={isExecutingPlayground}
-                      className="px-3 py-1.5 text-xs text-[#EEEEEE] font-bold bg-[#548CA8] hover:bg-[#476072] rounded-lg flex items-center gap-1.5 cursor-pointer shadow-md"
+                      className="px-3 py-1.5 text-xs text-[#FFFFFF] font-bold bg-[#3ECF8E] hover:bg-[#333333] rounded-lg flex items-center gap-1.5 cursor-pointer shadow-md"
                     >
                       {isExecutingPlayground ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -819,7 +856,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
               </div>
             ) : (
               /* Formatted Code Block */
-              <pre className="p-3 bg-[#1E293B] rounded-xl text-emerald-400 font-mono text-xs border border-[#476072]/60 leading-relaxed whitespace-pre-wrap break-words overflow-x-hidden shadow-inner">
+              <pre className="p-3 bg-[#232323] rounded-xl text-[#3ECF8E] font-mono text-xs border border-[#333333]/60 leading-relaxed whitespace-pre-wrap break-words overflow-x-hidden shadow-inner">
                 <code>{sqlQuery}</code>
               </pre>
             )}
@@ -829,16 +866,16 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
               <div>
                 <button
                   onClick={() => setShowExplanation(!showExplanation)}
-                  className="flex items-center gap-1 text-[11px] text-[#548CA8] hover:text-[#EEEEEE] font-medium transition-colors cursor-pointer"
+                  className="flex items-center gap-1 text-[11px] text-[#3ECF8E] hover:text-[#FFFFFF] font-medium transition-colors cursor-pointer"
                 >
-                  <HelpCircle className="w-3 h-3 text-[#548CA8]" />
+                  <HelpCircle className="w-3 h-3 text-[#3ECF8E]" />
                   <span>Explain Query Logic</span>
                   {showExplanation ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                 </button>
 
                 {showExplanation && (
-                  <div className="mt-1.5 p-2.5 bg-[#1E293B]/90 border border-[#476072]/60 rounded-lg text-xs text-slate-200 leading-relaxed">
-                    💡 <span className="font-semibold text-[#548CA8]">Logic Breakdown:</span> {explanation}
+                  <div className="mt-1.5 p-2.5 bg-[#232323]/90 border border-[#333333]/60 rounded-lg text-xs text-[#FFFFFF] leading-relaxed">
+                    💡 <span className="font-semibold text-[#3ECF8E]">Logic Breakdown:</span> {explanation}
                   </div>
                 )}
               </div>
@@ -849,41 +886,41 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
       {/* 3. BUSINESS INSIGHT BAR */}
       {explanation && !isForbidden && (
-        <div className="p-3 bg-[#1E293B]/80 rounded-xl text-xs text-[#EEEEEE] border border-[#548CA8]/30 leading-relaxed shadow-inner space-y-2">
+        <div className="p-3 bg-[#ECFDF5] rounded-xl text-xs text-[#0F172A] border border-[#10B981]/30 leading-relaxed shadow-xs space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 font-semibold text-[#548CA8]">
-              <Sparkles className="w-3.5 h-3.5 text-[#548CA8]" />
+            <div className="flex items-center gap-1.5 font-semibold text-[#047857]">
+              <Sparkles className="w-3.5 h-3.5 text-[#10B981]" />
               <span>Business Insight</span>
             </div>
 
             <div className="flex items-center gap-1.5 text-[10px]">
-              <span className="text-slate-400">Translate Insight:</span>
+              <span className="text-[#047857]">Translate Insight:</span>
               <button
                 onClick={() => handleTranslateInsight("gu")}
                 disabled={isTranslatingInsight}
-                className="px-2 py-0.5 rounded bg-sky-950/60 border border-sky-700/50 hover:border-sky-400 text-sky-300 font-semibold cursor-pointer transition-colors"
+                className="px-2 py-0.5 rounded bg-[#E0F2FE] border border-[#0284C7]/30 hover:border-[#10B981] text-[#0369A1] font-semibold cursor-pointer transition-colors"
               >
                 Gujarati (ગુજરાતી)
               </button>
               <button
                 onClick={() => handleTranslateInsight("hi")}
                 disabled={isTranslatingInsight}
-                className="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-700/50 hover:border-amber-400 text-amber-300 font-semibold cursor-pointer transition-colors"
+                className="px-2 py-0.5 rounded bg-[#FEF3C7] border border-[#D97706]/30 hover:border-[#D97706] text-[#B45309] font-semibold cursor-pointer transition-colors"
               >
                 Hindi (हिंदी)
               </button>
-              {isTranslatingInsight && <Loader2 className="w-3 h-3 text-sky-400 animate-spin" />}
+              {isTranslatingInsight && <Loader2 className="w-3 h-3 text-[#10B981] animate-spin" />}
             </div>
           </div>
 
-          <p className="text-slate-200">{explanation}</p>
+          <p className="text-[#0F172A]">{explanation}</p>
 
           {translatedInsight && (
-            <div className="p-2.5 bg-[#0f172a] border border-[#548CA8]/40 rounded-lg text-xs text-emerald-300 font-medium space-y-0.5">
-              <span className="text-[10px] text-[#548CA8] uppercase font-bold tracking-wider block">
+            <div className="p-2.5 bg-[#FFFFFF] border border-[#10B981]/30 rounded-lg text-xs text-[#047857] font-medium space-y-0.5">
+              <span className="text-[10px] text-[#047857] uppercase font-bold tracking-wider block">
                 {translatedInsight.lang} Translation:
               </span>
-              <p className="text-emerald-200 font-sans">{translatedInsight.text}</p>
+              <p className="text-[#064E3B] font-sans">{translatedInsight.text}</p>
             </div>
           )}
         </div>
@@ -896,22 +933,22 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
             <button
               onClick={handleFetchNarrative}
               disabled={isGeneratingNarrative}
-              className="flex items-center gap-1.5 text-xs text-purple-300 bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 px-3 py-1.5 rounded-xl cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 text-xs text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1.5 rounded-xl cursor-pointer transition-colors font-medium"
             >
               {isGeneratingNarrative ? (
-                <Loader2 className="w-3.5 h-3.5 text-purple-400 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 text-purple-600 animate-spin" />
               ) : (
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
               )}
               <span>Generate AI Data Storyteller Narrative</span>
             </button>
           ) : (
-            <div className="p-3.5 bg-purple-950/40 border border-purple-500/40 rounded-xl space-y-1.5 text-xs text-purple-200">
-              <div className="flex items-center space-x-2 font-bold text-purple-400 text-xs">
-                <Sparkles className="h-4 w-4 text-purple-400" />
+            <div className="p-3.5 bg-purple-50 border border-purple-200 rounded-xl space-y-1.5 text-xs text-purple-900">
+              <div className="flex items-center space-x-2 font-bold text-purple-800 text-xs">
+                <Sparkles className="h-4 w-4 text-purple-700" />
                 <span>Executive Data Storyteller Narrative</span>
               </div>
-              <p className="text-purple-200/90 leading-relaxed font-sans text-xs">
+              <p className="text-purple-900 leading-relaxed font-sans text-xs">
                 {narrativeStory}
               </p>
             </div>
@@ -921,24 +958,24 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
       {/* 4. VISUALIZATION OR DATA PRESENTATION */}
       {results.length > 0 && !isForbidden && (
-        <div className="space-y-3 pt-1 border-t border-[#476072]/50">
+        <div className="space-y-3 pt-1 border-t border-[#E2E8F0]">
           {/* KPI Stat Cards */}
           {isKpiMetric ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               {keys.map((k, idx) => (
                 <div
                   key={k}
-                  className="p-4 bg-[#1E293B] border border-[#548CA8]/30 rounded-xl shadow-xl flex items-center justify-between"
+                  className="p-4 bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl shadow-xs flex items-center justify-between"
                 >
                   <div className="space-y-0.5">
-                    <span className="text-[11px] uppercase font-bold text-[#548CA8] tracking-wider block">
+                    <span className="text-[11px] uppercase font-bold text-[#047857] tracking-wider block">
                       {k.replace(/_/g, " ")}
                     </span>
-                    <span className="text-2xl sm:text-3xl font-black text-[#EEEEEE] font-mono">
+                    <span className="text-2xl sm:text-3xl font-black text-[#0F172A] font-mono">
                       {String(results[0][k] ?? "0")}
                     </span>
                   </div>
-                  <div className="p-2.5 bg-[#548CA8]/20 border border-[#548CA8]/30 rounded-xl text-[#548CA8]">
+                  <div className="p-2.5 bg-[#ECFDF5] border border-[#10B981]/30 rounded-xl text-[#10B981]">
                     {idx === 0 ? <TrendingUp className="w-5 h-5" /> : <Database className="w-5 h-5" />}
                   </div>
                 </div>
@@ -947,17 +984,17 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
           ) : (
             <div className="w-full space-y-3">
               {/* Dynamic Chart & Palette Control Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 bg-[#1E293B] p-2 rounded-xl border border-[#476072]/50 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-[#F8FAFC] p-2 rounded-xl border border-[#E2E8F0] text-xs">
                 <div className="flex items-center space-x-1">
-                  <span className="text-[11px] text-slate-400 font-semibold mr-1">View:</span>
+                  <span className="text-[11px] text-[#047857] font-semibold mr-1">View:</span>
                   {(["bar", "line", "pie", "table"] as const).map((type) => (
                     <button
                       key={type}
                       onClick={() => setActiveChartType(type)}
                       className={`px-2.5 py-1 rounded-lg font-semibold uppercase text-[10px] transition-colors ${
                         activeChartType === type
-                          ? "bg-[#548CA8] text-white shadow"
-                          : "text-slate-400 hover:text-white hover:bg-slate-800"
+                          ? "bg-[#10B981] text-white shadow-xs"
+                          : "text-[#047857] hover:text-[#0F172A] hover:bg-[#E2E8F0]"
                       }`}
                     >
                       {type}
@@ -965,18 +1002,38 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                   ))}
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <span className="text-[11px] text-slate-400 font-semibold">Palette:</span>
-                  <select
-                    value={activePalette}
-                    onChange={(e) => setActivePalette(e.target.value as any)}
-                    className="bg-[#0f172a] text-xs text-[#548CA8] rounded border border-slate-700 px-2 py-0.5 focus:outline-none"
-                  >
-                    <option value="cyan">Oceanic Cyan</option>
-                    <option value="emerald">Emerald Matrix</option>
-                    <option value="sunset">Sunset Amber</option>
-                    <option value="purple">Violet Aurora</option>
-                  </select>
+                <div className="flex items-center space-x-3">
+                  {numericKeys.length > 1 && (
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-[11px] text-[#047857] font-semibold">Metric:</span>
+                      <select
+                        value={selectedMetric}
+                        onChange={(e) => setSelectedMetric(e.target.value)}
+                        className="bg-[#FFFFFF] text-xs text-[#047857] rounded border border-[#E2E8F0] px-2 py-0.5 focus:outline-none"
+                      >
+                        <option value="">{activeChartType === "pie" ? "Primary Metric" : "All Metrics"}</option>
+                        {numericKeys.map((k) => (
+                          <option key={k} value={k}>
+                            {k.replace(/_/g, " ")}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-[11px] text-[#047857] font-semibold">Palette:</span>
+                    <select
+                      value={activePalette}
+                      onChange={(e) => setActivePalette(e.target.value as any)}
+                      className="bg-[#FFFFFF] text-xs text-[#047857] rounded border border-[#E2E8F0] px-2 py-0.5 focus:outline-none"
+                    >
+                      <option value="cyan">Oceanic Cyan</option>
+                      <option value="emerald">Emerald Matrix</option>
+                      <option value="sunset">Sunset Amber</option>
+                      <option value="purple">Violet Aurora</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -984,20 +1041,21 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                 <div className="h-64 sm:h-72 w-full pt-1">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={results}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#476072" />
-                      <XAxis dataKey={xAxisKey} stroke="#94a3b8" fontSize={11} />
-                      <YAxis stroke="#94a3b8" fontSize={11} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <XAxis dataKey={xAxisKey} stroke="#475569" fontSize={11} />
+                      <YAxis stroke="#475569" fontSize={11} />
                       <Tooltip
-                        cursor={{ fill: "rgba(84, 140, 168, 0.12)" }}
+                        cursor={{ fill: "rgba(16, 185, 129, 0.08)" }}
                         contentStyle={{
-                          backgroundColor: "#1E293B",
-                          borderColor: "#548CA8",
-                          color: "#EEEEEE",
+                          backgroundColor: "#FFFFFF",
+                          borderColor: "#10B981",
+                          color: "#0F172A",
                           borderRadius: "10px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                         }}
                       />
                       <Legend />
-                      {valueKeys.map((key, idx) => (
+                      {(selectedMetric ? [selectedMetric] : numericKeys).map((key, idx) => (
                         <Bar
                           key={key}
                           dataKey={key}
@@ -1014,25 +1072,26 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                 <div className="h-64 sm:h-72 w-full pt-1">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={results}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#476072" />
-                      <XAxis dataKey={xAxisKey} stroke="#94a3b8" fontSize={11} />
-                      <YAxis stroke="#94a3b8" fontSize={11} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <XAxis dataKey={xAxisKey} stroke="#475569" fontSize={11} />
+                      <YAxis stroke="#475569" fontSize={11} />
                       <Tooltip
-                        cursor={{ stroke: "#548CA8", strokeWidth: 1, strokeDasharray: "4 4" }}
+                        cursor={{ stroke: "#10B981", strokeWidth: 1, strokeDasharray: "4 4" }}
                         contentStyle={{
-                          backgroundColor: "#1E293B",
-                          borderColor: "#548CA8",
-                          color: "#EEEEEE",
+                          backgroundColor: "#FFFFFF",
+                          borderColor: "#10B981",
+                          color: "#0F172A",
                           borderRadius: "10px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                         }}
                       />
                       <Legend />
-                      {valueKeys.map((key, idx) => (
+                      {(selectedMetric ? [selectedMetric] : numericKeys).map((key, idx) => (
                         <Line
                           key={key}
                           type="monotone"
                           dataKey={key}
-                          stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                          stroke={paletteColors[idx % paletteColors.length] || CHART_COLORS[idx % CHART_COLORS.length]}
                           strokeWidth={3}
                           dot={{ r: 4 }}
                         />
@@ -1047,22 +1106,29 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Tooltip
+                        formatter={(value: any, name: any) => [
+                          typeof value === "number" ? value.toLocaleString() : value,
+                          name || activeMetricKey,
+                        ]}
                         contentStyle={{
-                          backgroundColor: "#1E293B",
-                          borderColor: "#548CA8",
-                          color: "#EEEEEE",
+                          backgroundColor: "#FFFFFF",
+                          borderColor: "#10B981",
+                          color: "#0F172A",
                           borderRadius: "10px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                         }}
                       />
                       <Legend />
                       <Pie
                         data={results}
-                        dataKey={valueKeys[0] || keys[1]}
-                        nameKey={xAxisKey}
+                        dataKey={activeMetricKey}
+                        nameKey={labelKey}
                         cx="50%"
                         cy="50%"
                         outerRadius={85}
-                        label
+                        label={({ name, percent }: any) =>
+                          `${name ? String(name).slice(0, 14) : ""}: ${(((percent as number) || 0) * 100).toFixed(0)}%`
+                        }
                       >
                         {results.map((_: any, index: number) => (
                           <Cell
@@ -1080,9 +1146,9 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
               {activeChartType === "table" && (
                 <div className="space-y-2.5 pt-1">
                   {/* Table Search & Controls */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 bg-[#1E293B]/80 p-2 rounded-xl border border-[#476072]/60">
+                  <div className="flex flex-wrap items-center justify-between gap-2 bg-[#F8FAFC] p-2 rounded-xl border border-[#E2E8F0]">
                     <div className="relative flex-1 max-w-xs">
-                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" />
+                      <Search className="w-3.5 h-3.5 text-[#10B981] absolute left-2.5 top-2" />
                       <input
                         type="text"
                         value={tableSearch}
@@ -1091,12 +1157,12 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                           setCurrentPage(1);
                         }}
                         placeholder="Search records..."
-                        className="w-full bg-[#334257] border border-[#476072] rounded-lg pl-8 pr-2.5 py-1 text-xs text-[#EEEEEE] placeholder-slate-400 focus:outline-none focus:border-[#548CA8]"
+                        className="w-full bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg pl-8 pr-2.5 py-1 text-xs text-[#0F172A] placeholder-slate-400 focus:outline-none focus:border-[#10B981]"
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-slate-300">
-                      <span className="text-[10px] font-mono text-[#548CA8]">
+                    <div className="flex items-center gap-2 text-xs text-[#047857]">
+                      <span className="text-[10px] font-mono text-[#047857]">
                         Total: {filteredAndSortedData.length} records
                       </span>
                       <select
@@ -1105,7 +1171,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                           setRowsPerPage(Number(e.target.value));
                           setCurrentPage(1);
                         }}
-                        className="bg-[#334257] border border-[#476072] rounded px-2 py-0.5 text-[11px] text-[#EEEEEE] focus:outline-none"
+                        className="bg-[#FFFFFF] border border-[#CBD5E1] rounded px-2 py-0.5 text-[11px] text-[#0F172A] focus:outline-none"
                       >
                         <option value={5}>5 per page</option>
                         <option value={10}>10 per page</option>
@@ -1115,44 +1181,44 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                   </div>
 
                   {/* Table Element */}
-                  <div className="overflow-x-auto border border-[#476072]/60 rounded-xl bg-[#1E293B]/80 shadow-inner custom-scrollbar">
-                    <table className="w-full text-xs text-left text-slate-200 border-collapse">
-                      <thead className="bg-[#334257] text-[#548CA8] uppercase font-semibold border-b border-[#476072]/60 sticky top-0">
+                  <div className="overflow-x-auto border border-[#E2E8F0] rounded-xl bg-[#FFFFFF] shadow-xs custom-scrollbar">
+                    <table className="w-full text-xs text-left text-[#0F172A] border-collapse">
+                      <thead className="bg-[#F8FAFC] text-[#047857] uppercase font-semibold border-b border-[#E2E8F0] sticky top-0">
                         <tr>
-                          <th className="p-2.5 text-[10px] text-slate-400 w-8">#</th>
+                          <th className="p-2.5 text-[10px] text-[#047857] w-8">#</th>
                           {keys.map((key) => (
                             <th
                               key={key}
                               onClick={() => handleSort(key)}
-                              className="p-2.5 cursor-pointer hover:text-[#EEEEEE] transition-colors select-none"
+                              className="p-2.5 cursor-pointer hover:text-[#0F172A] transition-colors select-none"
                             >
                               <div className="flex items-center gap-1 font-mono text-[11px]">
                                 <span>{key}</span>
                                 {sortColumn === key ? (
                                   sortDirection === "asc" ? (
-                                    <ArrowUp className="w-3 h-3 text-[#548CA8]" />
+                                    <ArrowUp className="w-3 h-3 text-[#10B981]" />
                                   ) : (
-                                    <ArrowDown className="w-3 h-3 text-[#548CA8]" />
+                                    <ArrowDown className="w-3 h-3 text-[#10B981]" />
                                   )
                                 ) : (
-                                  <ArrowUpDown className="w-3 h-3 text-slate-500 opacity-60" />
+                                  <ArrowUpDown className="w-3 h-3 text-[#94A3B8] opacity-60" />
                                 )}
                               </div>
                             </th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#476072]/40 font-mono text-[11px]">
+                      <tbody className="divide-y divide-[#E2E8F0] font-mono text-[11px]">
                         {paginatedData.map((row, rowIdx) => (
                           <tr
                             key={rowIdx}
-                            className="hover:bg-[#334257]/50 transition-colors"
+                            className="hover:bg-[#F1F5F9] transition-colors"
                           >
-                            <td className="p-2.5 text-[10px] text-slate-500">
+                            <td className="p-2.5 text-[10px] text-[#64748B]">
                               {(currentPage - 1) * rowsPerPage + rowIdx + 1}
                             </td>
                             {keys.map((key) => (
-                              <td key={key} className="p-2.5 text-[#EEEEEE]">
+                              <td key={key} className="p-2.5 text-[#0F172A]">
                                 {String(row[key] ?? "")}
                               </td>
                             ))}
@@ -1164,22 +1230,22 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
                   {/* Pagination Footer */}
                   {totalPages > 1 && (
-                    <div className="flex items-center justify-between px-1 text-xs text-slate-300">
-                      <span className="text-[10px] font-mono text-[#548CA8]">
+                    <div className="flex items-center justify-between px-1 text-xs text-[#047857]">
+                      <span className="text-[10px] font-mono text-[#047857]">
                         Page {currentPage} of {totalPages}
                       </span>
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                           disabled={currentPage === 1}
-                          className="p-1 bg-[#334257] hover:bg-[#476072] disabled:opacity-40 text-slate-300 rounded cursor-pointer"
+                          className="p-1 bg-[#F8FAFC] hover:bg-[#E2E8F0] disabled:opacity-40 text-[#047857] rounded cursor-pointer border border-[#E2E8F0]"
                         >
                           <ChevronLeft className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                           disabled={currentPage === totalPages}
-                          className="p-1 bg-[#334257] hover:bg-[#476072] disabled:opacity-40 text-slate-300 rounded cursor-pointer"
+                          className="p-1 bg-[#F8FAFC] hover:bg-[#E2E8F0] disabled:opacity-40 text-[#047857] rounded cursor-pointer border border-[#E2E8F0]"
                         >
                           <ChevronRight className="w-3.5 h-3.5" />
                         </button>

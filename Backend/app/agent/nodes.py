@@ -7,13 +7,18 @@ from app.core.schema_rag import get_relevant_schema
 from app.core.db_factory import get_db_connection as factory_get_db_connection
 from app.security.ast_guard import validate_read_only_sql, mask_pii_data, detect_data_anomalies
 
+_LLM_INSTANCE = None
+
 def get_llm():
-    """Returns ChatGroq instance with current model configuration."""
-    return ChatGroq(
-        groq_api_key=settings.GROQ_API_KEY,
-        model_name=settings.MODEL_NAME,
-        temperature=0.0  
-    )
+    """Returns ChatGroq singleton instance with current model configuration."""
+    global _LLM_INSTANCE
+    if _LLM_INSTANCE is None:
+        _LLM_INSTANCE = ChatGroq(
+            groq_api_key=settings.GROQ_API_KEY,
+            model_name=settings.MODEL_NAME,
+            temperature=0.0
+        )
+    return _LLM_INSTANCE
 
 def generate_sql_node(state: AgentState) -> dict:
     """

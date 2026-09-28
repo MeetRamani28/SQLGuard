@@ -33,27 +33,38 @@ import { Database3DCanvas } from "./components/Database3DCanvas";
 import { SQLGuard3DLogo } from "./components/SQLGuard3DLogo";
 import { SkeletonLoader } from "./components/SkeletonLoader";
 import { AuthGateway, UserButton } from "./components/AuthGateway";
-import { SavedQueriesModal } from "./components/SavedQueriesModal";
-import { ErDiagramModal } from "./components/ErDiagramModal";
-import { SystemHealthModal } from "./components/SystemHealthModal";
-import { QueryScheduleModal } from "./components/QueryScheduleModal";
-import { CommandPaletteModal } from "./components/CommandPaletteModal";
-import { QueryCompareModal } from "./components/QueryCompareModal";
-import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
-import { QueryHistoryModal } from "./components/QueryHistoryModal";
 import type { QueryResponseData } from "./types";
 
-// Code splitting with React.lazy
+// Code splitting & Lazy loading heavy modal components for smooth page loading
 const ConnectDbModal = lazy(() =>
-  import("./components/ConnectDbModal").then((m) => ({
-    default: m.ConnectDbModal,
-  }))
+  import("./components/ConnectDbModal").then((m) => ({ default: m.ConnectDbModal }))
 );
-
 const SchemaExplorerModal = lazy(() =>
-  import("./components/SchemaExplorerModal").then((m) => ({
-    default: m.SchemaExplorerModal,
-  }))
+  import("./components/SchemaExplorerModal").then((m) => ({ default: m.SchemaExplorerModal }))
+);
+const SavedQueriesModal = lazy(() =>
+  import("./components/SavedQueriesModal").then((m) => ({ default: m.SavedQueriesModal }))
+);
+const ErDiagramModal = lazy(() =>
+  import("./components/ErDiagramModal").then((m) => ({ default: m.ErDiagramModal }))
+);
+const SystemHealthModal = lazy(() =>
+  import("./components/SystemHealthModal").then((m) => ({ default: m.SystemHealthModal }))
+);
+const QueryScheduleModal = lazy(() =>
+  import("./components/QueryScheduleModal").then((m) => ({ default: m.QueryScheduleModal }))
+);
+const CommandPaletteModal = lazy(() =>
+  import("./components/CommandPaletteModal").then((m) => ({ default: m.CommandPaletteModal }))
+);
+const QueryCompareModal = lazy(() =>
+  import("./components/QueryCompareModal").then((m) => ({ default: m.QueryCompareModal }))
+);
+const KeyboardShortcutsModal = lazy(() =>
+  import("./components/KeyboardShortcutsModal").then((m) => ({ default: m.KeyboardShortcutsModal }))
+);
+const QueryHistoryModal = lazy(() =>
+  import("./components/QueryHistoryModal").then((m) => ({ default: m.QueryHistoryModal }))
 );
 
 const SAMPLE_QUESTIONS = [
@@ -330,51 +341,58 @@ const MainAppContent: React.FC<{
   };
 
   return (
-    <div className="h-screen w-full max-w-full flex flex-col overflow-hidden bg-[#1E293B] text-[#EEEEEE] font-sans selection:bg-[#548CA8]/30 selection:text-[#EEEEEE]">
-      <Toaster position="top-right" theme="dark" richColors />
+    <div className="h-screen w-full max-w-full flex flex-col overflow-hidden bg-[#F8FAFC] text-[#0F172A] font-sans selection:bg-[#10B981]/20 selection:text-[#0F172A]">
+      <Toaster position="top-right" theme="light" richColors />
 
       {/* Primary Top Header Navigation (Fixed Height h-14) */}
-      <header className="h-14 border-b border-[#476072]/60 bg-[#334257] z-40 shrink-0 px-3 sm:px-4 flex items-center justify-between shadow-xl">
+      <header className="h-14 border-b border-[#E2E8F0] bg-[#FFFFFF] z-40 shrink-0 px-3 sm:px-4 flex items-center justify-between shadow-xs">
         {/* Left Branding & Sidebar Toggle */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-1.5 bg-[#1E293B] hover:bg-[#548CA8]/20 text-[#548CA8] hover:text-[#EEEEEE] rounded-xl border border-[#476072]/60 hover:border-[#548CA8]/60 cursor-pointer transition-all shrink-0 shadow-sm group"
+            className="p-1.5 bg-[#FFFFFF] hover:bg-[#F1F5F9] text-[#047857] rounded-xl border border-[#E2E8F0] hover:border-[#10B981]/50 cursor-pointer transition-all shrink-0 shadow-xs group"
             title={isSidebarOpen ? "Collapse Analytics Sidebar" : "Expand Analytics Sidebar"}
           >
             {isSidebarOpen ? (
-              <ChevronsLeft className="w-5 h-5 text-[#548CA8] group-hover:text-sky-300 transition-colors" />
+              <ChevronsLeft className="w-5 h-5 text-[#10B981] group-hover:text-[#059669] transition-colors" />
             ) : (
-              <Menu className="w-5 h-5 text-[#548CA8] group-hover:text-sky-300 transition-colors" />
+              <Menu className="w-5 h-5 text-[#10B981] group-hover:text-[#059669] transition-colors" />
             )}
           </button>
 
-          <SQLGuard3DLogo size={32} />
-
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-base sm:text-lg font-black bg-gradient-to-r from-[#EEEEEE] via-sky-200 to-[#548CA8] bg-clip-text text-transparent tracking-tight truncate">
-              SQLGuard
-            </h1>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <SQLGuard3DLogo size={34} />
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h1 className="text-lg sm:text-xl font-black tracking-tight truncate flex items-center font-sans select-none">
+                <span className="text-[#0F172A] font-extrabold tracking-tight">SQL</span>
+                <span className="bg-gradient-to-r from-[#10B981] via-[#059669] to-[#047857] bg-clip-text text-transparent font-black tracking-wider drop-shadow-xs">
+                  Guard
+                </span>
+                <span className="ml-2 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#047857] bg-[#ECFDF5] border border-[#10B981]/30 rounded-md shadow-2xs hidden xs:inline-block">
+                  AI 2.0
+                </span>
+              </h1>
+            </div>
           </div>
         </div>
 
         {/* Right Status Controls & User Profile */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Connected Database Pill / CTA */}
-          <div className="flex items-center gap-1 bg-[#1E293B] border border-[#476072]/60 rounded-xl p-1 shadow-inner">
+          <div className="flex items-center gap-1 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-1 shadow-xs">
             <button
               onClick={() => setIsDbModalOpen(true)}
               className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer font-semibold ${
                 dbConfig
-                  ? "bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/60 border border-emerald-700/50"
-                  : "bg-sky-500/20 text-sky-200 hover:bg-sky-500/30 border border-sky-400/50 shadow-sm"
+                  ? "bg-[#ECFDF5] text-[#047857] hover:bg-[#D1FAE5] border border-[#10B981]/30"
+                  : "bg-[#ECFDF5] text-[#047857] hover:bg-[#D1FAE5] border border-[#10B981]/40 shadow-xs"
               }`}
               title={dbConfig ? "Connected Database (Click to Change)" : "Click to Connect PostgreSQL or Custom Database"}
             >
               {dbConfig ? (
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse shrink-0" />
               ) : (
-                <Database className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+                <Database className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
               )}
               <span className="max-w-[130px] sm:max-w-[210px] truncate">
                 {dbConfig ? getDbDisplayName() : "+ Connect Database"}
@@ -385,7 +403,7 @@ const MainAppContent: React.FC<{
               <button
                 onClick={disconnectDb}
                 title="Disconnect Custom DB & Reset to Demo"
-                className="text-slate-400 hover:text-rose-400 p-1 cursor-pointer transition-colors"
+                className="text-[#047857] hover:text-rose-600 p-1 cursor-pointer transition-colors"
               >
                 <XCircle className="w-3.5 h-3.5" />
               </button>
@@ -395,50 +413,50 @@ const MainAppContent: React.FC<{
           {/* AST Active Security Pill */}
           <button
             onClick={() => setIsAuditLogModalOpen(true)}
-            className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/60 px-2.5 py-1 rounded-xl border border-emerald-800/40 font-medium cursor-pointer transition-all"
+            className="flex items-center gap-1 text-xs text-[#047857] bg-[#ECFDF5] hover:bg-[#D1FAE5] px-2.5 py-1 rounded-xl border border-[#10B981]/30 font-medium cursor-pointer transition-all"
             title="View System Observability & AST Security Policy"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
             <span className="hidden sm:inline">AST Active</span>
           </button>
 
           {/* User Profile Dropdown */}
-          <div className="flex items-center gap-2 pl-2 border-l border-[#476072]/50 shrink-0">
+          <div className="flex items-center gap-2 pl-2 border-l border-[#E2E8F0] shrink-0">
             <UserButton userContext={userContext} onSignOut={handleSignOut} />
           </div>
         </div>
       </header>
 
       {/* Secondary Tools Navigation Sub-Bar (Fixed Height h-11) */}
-      <nav className="h-11 border-b border-[#476072]/50 bg-[#1E293B]/95 backdrop-blur-md z-30 shrink-0 px-3 flex items-center justify-between overflow-x-auto custom-scrollbar shadow-inner gap-2">
+      <nav className="h-11 border-b border-[#E2E8F0] bg-[#FFFFFF] backdrop-blur-md z-30 shrink-0 px-3 flex items-center justify-between overflow-x-auto custom-scrollbar shadow-xs gap-2">
         <div className="flex items-center gap-1.5 shrink-0 min-w-max">
           {/* Query History Popup Button */}
           <button
             onClick={() => setIsQueryHistoryModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-[#548CA8]/20 text-[#548CA8] hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-[#476072]/60 transition-all cursor-pointer font-medium"
+            className="flex items-center gap-1.5 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#047857] hover:text-[#0F172A] px-2.5 py-1 rounded-lg border border-[#E2E8F0] transition-all cursor-pointer font-medium"
             title="Open Query History & Execution Log"
           >
-            <History className="w-3.5 h-3.5 text-[#548CA8]" />
+            <History className="w-3.5 h-3.5 text-[#10B981]" />
             <span>Query History</span>
             {history.length > 0 && (
-              <span className="text-[10px] bg-[#548CA8]/30 text-sky-200 px-1.5 py-0.2 rounded-full font-bold border border-[#548CA8]/40">
+              <span className="text-[10px] bg-[#ECFDF5] text-[#047857] px-1.5 py-0.2 rounded-full font-bold border border-[#10B981]/30">
                 {history.length}
               </span>
             )}
           </button>
 
-          <div className="h-4 w-px bg-[#476072]/60 mx-1" />
+          <div className="h-4 w-px bg-[#E2E8F0] mx-1" />
 
           {/* Live Dashboard */}
           <button
             onClick={() => setIsDashboardModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-[#548CA8]/20 text-[#548CA8] hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-[#476072]/60 transition-all cursor-pointer font-medium relative"
+            className="flex items-center gap-1.5 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#047857] hover:text-[#0F172A] px-2.5 py-1 rounded-lg border border-[#E2E8F0] transition-all cursor-pointer font-medium relative"
             title="Live Pinned Analytics Dashboard"
           >
-            <LayoutGrid className="w-3.5 h-3.5 text-[#548CA8]" />
+            <LayoutGrid className="w-3.5 h-3.5 text-[#10B981]" />
             <span>Live Dashboard</span>
             {pinnedCards.length > 0 && (
-              <span className="text-[10px] bg-[#548CA8] text-[#EEEEEE] px-1.5 py-0.2 rounded-full font-bold">
+              <span className="text-[10px] bg-[#10B981] text-[#FFFFFF] px-1.5 py-0.2 rounded-full font-bold">
                 {pinnedCards.length}
               </span>
             )}
@@ -447,42 +465,42 @@ const MainAppContent: React.FC<{
           {/* Saved Queries */}
           <button
             onClick={() => setIsSavedQueriesModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-indigo-600/20 text-indigo-400 hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-indigo-500/30 transition-colors cursor-pointer font-medium"
+            className="flex items-center gap-1.5 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#047857] hover:text-[#0F172A] px-2.5 py-1 rounded-lg border border-[#E2E8F0] transition-colors cursor-pointer font-medium"
             title="Saved Query Templates & Bookmarks"
           >
-            <Bookmark className="w-3.5 h-3.5 text-indigo-400" />
+            <Bookmark className="w-3.5 h-3.5 text-[#10B981]" />
             <span>Saved Queries</span>
           </button>
 
           {/* ER Diagram */}
           <button
             onClick={() => setIsErDiagramModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-cyan-600/20 text-cyan-400 hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-cyan-500/30 transition-colors cursor-pointer font-medium"
+            className="flex items-center gap-1.5 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0284C7] hover:text-[#0F172A] px-2.5 py-1 rounded-lg border border-[#E2E8F0] transition-colors cursor-pointer font-medium"
             title="Interactive ER Schema Diagram"
           >
-            <Network className="w-3.5 h-3.5 text-cyan-400" />
+            <Network className="w-3.5 h-3.5 text-[#0284C7]" />
             <span>ER Diagram</span>
           </button>
 
-          <div className="h-4 w-px bg-[#476072]/60 mx-1" />
+          <div className="h-4 w-px bg-[#E2E8F0] mx-1" />
 
           {/* System Health */}
           <button
             onClick={() => setIsSystemHealthModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-emerald-600/20 text-emerald-400 hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-emerald-500/30 transition-colors cursor-pointer font-medium"
+            className="flex items-center gap-1.5 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#047857] hover:text-[#0F172A] px-2.5 py-1 rounded-lg border border-[#E2E8F0] transition-colors cursor-pointer font-medium"
             title="System Observability & Latency SLA"
           >
-            <Activity className="w-3.5 h-3.5 text-emerald-400" />
+            <Activity className="w-3.5 h-3.5 text-[#10B981]" />
             <span>Health</span>
           </button>
 
           {/* Schema Explorer */}
           <button
             onClick={() => setIsSchemaModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs bg-[#334257] hover:bg-[#476072] text-[#548CA8] hover:text-[#EEEEEE] px-2.5 py-1 rounded-lg border border-[#476072]/60 transition-colors cursor-pointer font-medium"
+            className="flex items-center gap-1.5 text-xs bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#047857] hover:text-[#0F172A] px-2.5 py-1 rounded-lg border border-[#E2E8F0] transition-colors cursor-pointer font-medium"
             title="Explore Database Schema"
           >
-            <TableIcon className="w-3.5 h-3.5 text-[#548CA8]" />
+            <TableIcon className="w-3.5 h-3.5 text-[#10B981]" />
             <span>Schema Explorer</span>
           </button>
         </div>
@@ -490,19 +508,19 @@ const MainAppContent: React.FC<{
 
       {/* LIVE DASHBOARD MODAL */}
       {isDashboardModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
-          <div className="bg-[#213448] border border-[#547792]/60 w-full max-w-6xl h-[88vh] rounded-2xl p-4 sm:p-6 shadow-2xl flex flex-col space-y-4 text-[#EEEEEE]">
-            <div className="flex items-center justify-between border-b border-[#547792]/50 pb-3">
-              <div className="flex items-center gap-2 text-sky-400 font-bold text-base">
-                <LayoutGrid className="w-5 h-5 text-sky-400" />
-                <span className="text-[#EEEEEE] font-bold">Live Pinned Analytics Dashboard</span>
-                <span className="text-xs bg-[#547792]/30 border border-[#547792]/50 px-2.5 py-0.5 rounded-full text-sky-200 font-semibold">
+        <div className="fixed inset-0 z-50 bg-[#121212]/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-[#333333] border border-[#3ECF8E]/60 w-full max-w-6xl h-[88vh] rounded-2xl p-4 sm:p-6 shadow-2xl flex flex-col space-y-4 text-[#FFFFFF]">
+            <div className="flex items-center justify-between border-b border-[#3ECF8E]/50 pb-3">
+              <div className="flex items-center gap-2 text-[#3ECF8E] font-bold text-base">
+                <LayoutGrid className="w-5 h-5 text-[#3ECF8E]" />
+                <span className="text-[#FFFFFF] font-bold">Live Pinned Analytics Dashboard</span>
+                <span className="text-xs bg-[#3ECF8E]/30 border border-[#3ECF8E]/50 px-2.5 py-0.5 rounded-full text-emerald-200 font-semibold">
                   {pinnedCards.length} Pinned Metrics
                 </span>
               </div>
               <button
                 onClick={() => setIsDashboardModalOpen(false)}
-                className="text-slate-400 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-slate-800 transition-colors"
+                className="text-[#3ECF8E] hover:text-white cursor-pointer p-1 rounded-lg hover:bg-[#2C2C2C] transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -510,15 +528,15 @@ const MainAppContent: React.FC<{
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar">
               {pinnedCards.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center space-y-3 text-slate-400 py-12">
-                  <Pin className="w-10 h-10 text-sky-400 opacity-50" />
+                <div className="h-full flex flex-col items-center justify-center space-y-3 text-[#3ECF8E] py-12">
+                  <Pin className="w-10 h-10 text-[#3ECF8E] opacity-50" />
                   <p className="text-xs sm:text-sm font-medium">No pinned analytics cards yet.</p>
-                  <p className="text-[11px] text-slate-500">Click "Pin" on any query result card to build your executive dashboard.</p>
+                  <p className="text-[11px] text-[#71717A]">Click "Pin" on any query result card to build your executive dashboard.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                   {pinnedCards.map((pinned) => (
-                    <div key={pinned.id} className="relative group border border-[#547792]/40 rounded-2xl overflow-hidden bg-[#1E293B]/90 shadow-xl">
+                    <div key={pinned.id} className="relative group border border-[#3ECF8E]/40 rounded-2xl overflow-hidden bg-[#232323]/90 shadow-xl">
                       <button
                         onClick={() => unpinCard(pinned.id)}
                         className="absolute right-3 top-3 z-20 px-2.5 py-1 bg-rose-950/90 text-rose-300 hover:bg-rose-900 rounded-lg border border-rose-800/60 text-[10px] font-semibold cursor-pointer transition-colors shadow-md"
@@ -538,46 +556,46 @@ const MainAppContent: React.FC<{
 
       {/* AST SECURITY AUDIT LOG MODAL */}
       {isAuditLogModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#1E293B] border border-[#476072] w-full max-w-xl rounded-2xl p-6 shadow-2xl space-y-4 text-xs text-[#EEEEEE]">
-            <div className="flex items-center justify-between border-b border-[#476072]/60 pb-3">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold text-base">
-                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+        <div className="fixed inset-0 z-50 bg-[#121212]/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#232323] border border-[#333333] w-full max-w-xl rounded-2xl p-6 shadow-2xl space-y-4 text-xs text-[#FFFFFF]">
+            <div className="flex items-center justify-between border-b border-[#333333]/60 pb-3">
+              <div className="flex items-center gap-2 text-[#3ECF8E] font-bold text-base">
+                <ShieldCheck className="w-5 h-5 text-[#3ECF8E]" />
                 <span>AST Security Guard & System Audit Policy</span>
               </div>
               <button
                 onClick={() => setIsAuditLogModalOpen(false)}
-                className="text-slate-400 hover:text-white cursor-pointer"
+                className="text-[#3ECF8E] hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3">
-              <div className="p-3 bg-[#0f172a] rounded-xl border border-[#476072]/60 space-y-1.5">
+              <div className="p-3 bg-[#121212] rounded-xl border border-[#333333]/60 space-y-1.5">
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#548CA8] font-semibold">AST Guard Mode</span>
-                  <span className="text-emerald-400 font-mono font-bold">Strict Read-Only SELECT</span>
+                  <span className="text-[#3ECF8E] font-semibold">AST Guard Mode</span>
+                  <span className="text-[#3ECF8E] font-mono font-bold">Strict Read-Only SELECT</span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#548CA8] font-semibold">PII Data Masking</span>
-                  <span className="text-emerald-400 font-mono font-bold">ACTIVE (SSN, Passwords, Credit Cards)</span>
+                  <span className="text-[#3ECF8E] font-semibold">PII Data Masking</span>
+                  <span className="text-[#3ECF8E] font-mono font-bold">ACTIVE (SSN, Passwords, Credit Cards)</span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#548CA8] font-semibold">Schema Vector RAG</span>
-                  <span className="text-sky-300 font-mono font-bold">ChromaDB / Pinecone Hybrid</span>
+                  <span className="text-[#3ECF8E] font-semibold">Schema Vector RAG</span>
+                  <span className="text-[#3ECF8E] font-mono font-bold">ChromaDB / Pinecone Hybrid</span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#548CA8] font-semibold">LangGraph Self-Correction</span>
+                  <span className="text-[#3ECF8E] font-semibold">LangGraph Self-Correction</span>
                   <span className="text-amber-400 font-mono font-bold">Max 3 Heals / Query</span>
                 </div>
               </div>
 
-              <div className="p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-xl space-y-1 text-[11px] text-emerald-200">
-                <p className="font-bold flex items-center gap-1 text-emerald-400">
+              <div className="p-3 bg-[#3ECF8E]/15 border border-[#3ECF8E]/30 rounded-xl space-y-1 text-[11px] text-emerald-200">
+                <p className="font-bold flex items-center gap-1 text-[#3ECF8E]">
                   <Activity className="w-3.5 h-3.5" /> Enforced Security Rules:
                 </p>
-                <ul className="list-disc list-inside space-y-0.5 text-slate-300">
+                <ul className="list-disc list-inside space-y-0.5 text-[#3ECF8E]">
                   <li>Destructive SQL commands (DROP, DELETE, INSERT, UPDATE, ALTER) hard-stopped before execution.</li>
                   <li>Multi-statement SQL injections automatically rejected.</li>
                   <li>Max row result cap enforced at 1000 rows.</li>
@@ -617,7 +635,7 @@ const MainAppContent: React.FC<{
         {isSidebarOpen && (
           <div
             onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden fixed inset-0 bg-slate-950/70 z-20 backdrop-blur-xs"
+            className="md:hidden fixed inset-0 bg-[#121212]/70 z-20 backdrop-blur-xs"
           />
         )}
 
@@ -629,13 +647,13 @@ const MainAppContent: React.FC<{
               animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="h-full bg-[#334257]/95 md:bg-[#334257]/70 border-r border-[#476072]/60 flex flex-col shrink-0 overflow-hidden z-30 fixed md:relative left-0 top-0 bottom-0 shadow-2xl md:shadow-none"
+              className="h-full bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col shrink-0 overflow-hidden z-30 fixed md:relative left-0 top-0 bottom-0 shadow-lg md:shadow-none"
             >
               {/* Sidebar Header for Mobile */}
-              <div className="p-3 border-b border-[#476072]/60 flex items-center justify-between">
+              <div className="p-3 border-b border-[#E2E8F0] flex items-center justify-between">
                 <button
                   onClick={createNewSession}
-                  className="flex-1 py-2.5 px-4 bg-[#548CA8] hover:bg-[#476072] text-[#EEEEEE] text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-[#548CA8]/20"
+                  className="flex-1 py-2.5 px-4 bg-[#10B981] hover:bg-[#059669] text-[#FFFFFF] text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-[#10B981]/20"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Analytics Chat</span>
@@ -643,7 +661,7 @@ const MainAppContent: React.FC<{
 
                 <button
                   onClick={() => setIsSidebarOpen(false)}
-                  className="md:hidden p-2 text-slate-400 hover:text-white ml-2 cursor-pointer"
+                  className="md:hidden p-2 text-[#047857] hover:text-[#0F172A] ml-2 cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -651,7 +669,7 @@ const MainAppContent: React.FC<{
 
               {/* Chat Sessions List */}
               <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
-                <div className="text-[10px] font-bold text-[#548CA8] px-2 uppercase tracking-wider mb-2">
+                <div className="text-[10px] font-bold text-[#047857] px-2 uppercase tracking-wider mb-2">
                   Chat Sessions ({sessions.length})
                 </div>
 
@@ -668,12 +686,12 @@ const MainAppContent: React.FC<{
                       }}
                       className={`group flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
                         isActive
-                          ? "bg-[#1E293B] border-[#548CA8]/70 text-[#EEEEEE] font-medium shadow-md"
-                          : "bg-[#1E293B]/40 border-[#476072]/40 text-slate-300 hover:bg-[#1E293B]/80 hover:text-[#EEEEEE]"
+                          ? "bg-[#ECFDF5] border-[#10B981]/50 text-[#047857] font-semibold shadow-xs"
+                          : "bg-[#F8FAFC] border-[#E2E8F0] text-[#475569] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
                       }`}
                     >
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-[#548CA8]" : "text-slate-500"}`} />
+                        <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-[#10B981]" : "text-[#94A3B8]"}`} />
                         {isEditing ? (
                           <input
                             type="text"
@@ -681,7 +699,7 @@ const MainAppContent: React.FC<{
                             onChange={(e) => setEditingTitle(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && saveEditingSession(sess.id, e as any)}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-[#1E293B] text-[#EEEEEE] px-1.5 py-0.5 rounded border border-[#548CA8] text-xs w-full focus:outline-none"
+                            className="bg-[#FFFFFF] text-[#0F172A] px-1.5 py-0.5 rounded border border-[#10B981] text-xs w-full focus:outline-none"
                             autoFocus
                           />
                         ) : (
@@ -693,15 +711,15 @@ const MainAppContent: React.FC<{
                         {isEditing ? (
                           <button
                             onClick={(e) => saveEditingSession(sess.id, e)}
-                            className="p-1 hover:text-emerald-400 cursor-pointer"
+                            className="p-1 hover:text-[#10B981] cursor-pointer"
                             title="Save Title"
                           >
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <Check className="w-3.5 h-3.5 text-[#10B981]" />
                           </button>
                         ) : (
                           <button
                             onClick={(e) => startEditingSession(sess.id, sess.title, e)}
-                            className="p-1 hover:text-[#548CA8] cursor-pointer text-slate-500"
+                            className="p-1 hover:text-[#10B981] cursor-pointer text-[#94A3B8]"
                             title="Rename Chat"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -713,7 +731,7 @@ const MainAppContent: React.FC<{
                             e.stopPropagation();
                             deleteSession(sess.id);
                           }}
-                          className="p-1 hover:text-rose-400 cursor-pointer text-slate-500"
+                          className="p-1 hover:text-rose-600 cursor-pointer text-[#94A3B8]"
                           title="Delete Chat"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -728,7 +746,7 @@ const MainAppContent: React.FC<{
         </AnimatePresence>
 
         {/* Main Conversation Stream Viewport */}
-        <main className="flex-1 h-full flex flex-col min-w-0 overflow-hidden bg-[#1E293B] relative z-10">
+        <main className="flex-1 h-full flex flex-col min-w-0 overflow-hidden bg-[#F8FAFC] relative z-10">
           <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-6 custom-scrollbar relative">
             {messages.length === 0 ? (
               <div className="relative min-h-[70vh] flex flex-col items-center justify-center">
@@ -738,20 +756,22 @@ const MainAppContent: React.FC<{
                 <motion.section
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="max-w-3xl mx-auto my-auto text-center space-y-6 pt-4 relative z-10 px-2"
+                  className="max-w-3xl mx-auto my-auto text-center space-y-5 pt-4 relative z-10 px-2 flex flex-col items-center"
                 >
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#548CA8]/15 border border-[#548CA8]/30 text-[#548CA8] text-xs font-medium">
-                    <Sparkles className="w-3.5 h-3.5 text-[#548CA8]" />
+                  <SQLGuard3DLogo size={56} className="mx-auto mb-1" />
+
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ECFDF5] border border-[#10B981]/30 text-[#047857] text-xs font-medium">
+                    <Sparkles className="w-3.5 h-3.5 text-[#10B981]" />
                     <span>{activeSession?.title || "Analytics Workspace"}</span>
                   </div>
 
-                  <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#EEEEEE] max-w-2xl mx-auto leading-snug">
+                  <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A] max-w-2xl mx-auto leading-snug">
                     Ask questions in natural language and {dbConfig ? getDbDisplayName() : "demo db"} is connected
                   </h2>
 
                   {/* Sample Prompt Pills */}
                   <div className="pt-2 space-y-3">
-                    <span className="text-[11px] text-[#548CA8] font-semibold tracking-wider uppercase block">
+                    <span className="text-[11px] text-[#047857] font-semibold tracking-wider uppercase block">
                       Multilingual Sample Queries to try out:
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-2xl mx-auto">
@@ -759,10 +779,10 @@ const MainAppContent: React.FC<{
                         <button
                           key={idx}
                           onClick={() => handleSampleClick(q)}
-                          className="text-left text-xs bg-[#334257]/80 hover:bg-[#334257] border border-[#476072]/60 hover:border-[#548CA8] text-slate-200 p-3 rounded-xl transition-all cursor-pointer flex items-center justify-between group shadow-sm backdrop-blur-sm"
+                          className="text-left text-xs bg-[#FFFFFF] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-[#10B981] text-[#0F172A] p-3 rounded-xl transition-all cursor-pointer flex items-center justify-between group shadow-xs"
                         >
                           <span className="line-clamp-2">{q}</span>
-                          <Sparkles className="w-3.5 h-3.5 text-[#548CA8] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2" />
+                          <Sparkles className="w-3.5 h-3.5 text-[#10B981] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2" />
                         </button>
                       ))}
                     </div>
@@ -785,16 +805,16 @@ const MainAppContent: React.FC<{
                       {/* USER MESSAGE BUBBLE - Right Aligned */}
                       {msg.role === "user" && (
                         <div className="flex items-start gap-2.5 sm:gap-3 justify-end">
-                          <div className="bg-gradient-to-r from-[#334257] to-[#476072] text-[#EEEEEE] rounded-2xl rounded-tr-none px-4 py-3 max-w-2xl shadow-lg border border-[#548CA8]/30 text-xs sm:text-sm leading-relaxed">
-                            <div className="flex items-center justify-between gap-4 text-[10px] text-[#548CA8] font-semibold uppercase tracking-wider mb-1">
+                          <div className="bg-[#FFFFFF] text-[#0F172A] rounded-2xl rounded-tr-none px-4 py-3 max-w-2xl shadow-sm border border-[#E2E8F0] text-xs sm:text-sm leading-relaxed">
+                            <div className="flex items-center justify-between gap-4 text-[10px] text-[#047857] font-semibold uppercase tracking-wider mb-1">
                               <span className="flex items-center gap-1">
-                                <User className="w-3 h-3" /> USER QUESTION
+                                <User className="w-3 h-3 text-[#10B981]" /> USER QUESTION
                               </span>
-                              <span>{msg.timestamp}</span>
+                              <span className="text-[#64748B]">{msg.timestamp}</span>
                             </div>
                             <div className="break-words font-medium">{msg.content}</div>
                           </div>
-                          <div className="w-8 h-8 rounded-full bg-[#548CA8]/20 border border-[#548CA8]/40 flex items-center justify-center text-[#548CA8] shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-[#ECFDF5] border border-[#10B981]/30 flex items-center justify-center text-[#047857] shrink-0">
                             <User className="w-4 h-4" />
                           </div>
                         </div>
@@ -809,8 +829,8 @@ const MainAppContent: React.FC<{
                             {msg.data ? (
                               <QueryResponseCard data={msg.data} />
                             ) : msg.error ? (
-                              <div className="p-4 bg-rose-950/70 border border-rose-800/80 rounded-2xl text-rose-300 text-xs space-y-1 shadow-xl leading-relaxed">
-                                <div className="flex items-center gap-2 font-bold text-rose-400 text-sm">
+                              <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs space-y-1 shadow-sm leading-relaxed">
+                                <div className="flex items-center gap-2 font-bold text-rose-800 text-sm">
                                   <AlertCircle className="w-4 h-4" />
                                   <span>Execution / Connection Error</span>
                                 </div>
@@ -839,13 +859,13 @@ const MainAppContent: React.FC<{
             )}
           </div>
 
-          {/* Ultra-Slick Glassmorphic Bottom Input Bar */}
-          <div className="border-t border-[#476072]/50 bg-[#1E293B]/95 backdrop-blur-xl p-3 sm:p-4 shrink-0 shadow-2xl relative z-20">
+          {/* Ultra-Slick Bottom Input Bar */}
+          <div className="border-t border-[#E2E8F0] bg-[#FFFFFF] backdrop-blur-xl p-3 sm:p-4 shrink-0 shadow-lg relative z-20">
             <div className="max-w-4xl mx-auto space-y-2.5">
               <form onSubmit={handleFormSubmit} className="relative">
-                <div className="flex items-center bg-[#0f172a]/90 border border-[#548CA8]/40 focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-400/30 rounded-2xl p-1.5 sm:p-2 shadow-2xl transition-all">
-                  <div className="flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-[#1E293B] rounded-xl border border-[#476072]/50 text-sky-400 text-xs font-semibold shrink-0">
-                    <Terminal className="w-3.5 h-3.5 text-sky-400" />
+                <div className="flex items-center bg-[#F8FAFC] border border-[#CBD5E1] focus-within:border-[#10B981] focus-within:ring-2 focus-within:ring-[#10B981]/20 rounded-2xl p-1.5 sm:p-2 shadow-xs transition-all">
+                  <div className="flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-[#FFFFFF] rounded-xl border border-[#E2E8F0] text-[#047857] text-xs font-semibold shrink-0">
+                    <Terminal className="w-3.5 h-3.5 text-[#10B981]" />
                     <span className="hidden sm:inline font-mono">SQL</span>
                   </div>
 
@@ -854,7 +874,7 @@ const MainAppContent: React.FC<{
                     value={questionInput}
                     onChange={(e) => setQuestionInput(e.target.value)}
                     placeholder="Ask any question in English, Gujarati (ગુજરાતી), or Hindi (हिंदी)..."
-                    className="w-full bg-transparent border-none px-3 sm:px-4 py-2 text-xs sm:text-sm text-[#EEEEEE] placeholder-slate-400 focus:outline-none"
+                    className="w-full bg-transparent border-none px-3 sm:px-4 py-2 text-xs sm:text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none"
                   />
 
                   <button
@@ -863,7 +883,7 @@ const MainAppContent: React.FC<{
                     className={`p-2 rounded-xl text-xs transition-colors shrink-0 ${
                       isListeningVoice
                         ? "bg-rose-600 text-white animate-pulse shadow-lg shadow-rose-500/50"
-                        : "text-[#548CA8] hover:bg-[#334257] hover:text-white"
+                        : "text-[#047857] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
                     }`}
                     title="Multilingual Voice Input (English, Gujarati, Hindi)"
                   >
@@ -873,7 +893,7 @@ const MainAppContent: React.FC<{
                   <button
                     type="submit"
                     disabled={loading || !questionInput.trim()}
-                    className="bg-[#547792] hover:bg-[#3d5a71] disabled:bg-[#1E293B] disabled:text-slate-600 text-white font-bold px-4 sm:px-6 py-2.5 rounded-xl flex items-center gap-2 text-xs transition-all cursor-pointer shrink-0 shadow-lg shadow-[#547792]/25 border border-[#94b4c1]/30 active:scale-95"
+                    className="bg-[#10B981] hover:bg-[#059669] disabled:bg-[#E2E8F0] disabled:text-[#94A3B8] text-white font-bold px-4 sm:px-6 py-2.5 rounded-xl flex items-center gap-2 text-xs transition-all cursor-pointer shrink-0 shadow-md shadow-[#10B981]/20 border border-[#10B981]/30 active:scale-95"
                   >
                     {loading ? (
                       <>
@@ -891,9 +911,9 @@ const MainAppContent: React.FC<{
               </form>
 
               {/* Quick Table Suggestion Chips */}
-              <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-400">
-                <span className="font-semibold text-[#94b4c1] flex items-center gap-1 text-[10px] uppercase tracking-wider">
-                  <TableIcon className="w-3 h-3 text-[#94b4c1]" /> Table Chips:
+              <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-[#047857]">
+                <span className="font-semibold text-[#047857] flex items-center gap-1 text-[10px] uppercase tracking-wider">
+                  <TableIcon className="w-3 h-3 text-[#10B981]" /> Table Chips:
                 </span>
                 {["customers", "orders", "revenue", "products", "categories", "region"].map((tbl) => (
                   <button
@@ -903,7 +923,7 @@ const MainAppContent: React.FC<{
                       const queryText = questionInput ? `${questionInput} ${tbl}` : `Show data from ${tbl}`;
                       scrollToExistingOrSend(queryText);
                     }}
-                    className="px-2.5 py-0.5 rounded-lg bg-[#1E293B] border border-[#476072]/60 hover:border-sky-400 text-sky-300 hover:text-white font-mono text-[10px] cursor-pointer transition-all hover:bg-[#334257] shadow-sm"
+                    className="px-2.5 py-0.5 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#10B981] text-[#047857] hover:text-[#0F172A] font-mono text-[10px] cursor-pointer transition-all hover:bg-[#F1F5F9] shadow-xs"
                   >
                     +{tbl}
                   </button>
@@ -914,52 +934,91 @@ const MainAppContent: React.FC<{
         </main>
       </div>
       {/* SAVED QUERIES LIBRARY MODAL */}
-      <SavedQueriesModal
-        isOpen={isSavedQueriesModalOpen}
-        onClose={() => setIsSavedQueriesModalOpen(false)}
-        onRunQuery={(q) => sendMessage(q)}
-      />
+      <Suspense fallback={null}>
+        {isSavedQueriesModalOpen && (
+          <SavedQueriesModal
+            isOpen={isSavedQueriesModalOpen}
+            onClose={() => setIsSavedQueriesModalOpen(false)}
+            onRunQuery={(q) => sendMessage(q)}
+          />
+        )}
+      </Suspense>
+
       {/* ER DIAGRAM MODAL */}
-      <ErDiagramModal
-        isOpen={isErDiagramModalOpen}
-        onClose={() => setIsErDiagramModalOpen(false)}
-      />
+      <Suspense fallback={null}>
+        {isErDiagramModalOpen && (
+          <ErDiagramModal
+            isOpen={isErDiagramModalOpen}
+            onClose={() => setIsErDiagramModalOpen(false)}
+          />
+        )}
+      </Suspense>
+
       {/* SYSTEM HEALTH & OBSERVABILITY METRICS MODAL */}
-      <SystemHealthModal
-        isOpen={isSystemHealthModalOpen}
-        onClose={() => setIsSystemHealthModalOpen(false)}
-      />
+      <Suspense fallback={null}>
+        {isSystemHealthModalOpen && (
+          <SystemHealthModal
+            isOpen={isSystemHealthModalOpen}
+            onClose={() => setIsSystemHealthModalOpen(false)}
+          />
+        )}
+      </Suspense>
+
       {/* AUTOMATED QUERY SCHEDULER MODAL */}
-      <QueryScheduleModal
-        isOpen={isScheduleModalOpen}
-        onClose={() => setIsScheduleModalOpen(false)}
-      />
+      <Suspense fallback={null}>
+        {isScheduleModalOpen && (
+          <QueryScheduleModal
+            isOpen={isScheduleModalOpen}
+            onClose={() => setIsScheduleModalOpen(false)}
+          />
+        )}
+      </Suspense>
+
       {/* GLOBAL COMMAND PALETTE (CTRL+K) */}
-      <CommandPaletteModal
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        onSelectAction={handleCommandSelect}
-      />
+      <Suspense fallback={null}>
+        {isCommandPaletteOpen && (
+          <CommandPaletteModal
+            isOpen={isCommandPaletteOpen}
+            onClose={() => setIsCommandPaletteOpen(false)}
+            onSelectAction={handleCommandSelect}
+          />
+        )}
+      </Suspense>
+
       {/* SIDE-BY-SIDE QUERY COMPARE & DIFF MODAL */}
-      <QueryCompareModal
-        isOpen={isCompareModalOpen}
-        onClose={() => setIsCompareModalOpen(false)}
-        cardA={history[0] || null}
-        cardB={history[1] || null}
-      />
+      <Suspense fallback={null}>
+        {isCompareModalOpen && (
+          <QueryCompareModal
+            isOpen={isCompareModalOpen}
+            onClose={() => setIsCompareModalOpen(false)}
+            cardA={history[0] || null}
+            cardB={history[1] || null}
+          />
+        )}
+      </Suspense>
+
       {/* KEYBOARD SHORTCUTS MODAL */}
-      <KeyboardShortcutsModal
-        isOpen={isKeyboardModalOpen}
-        onClose={() => setIsKeyboardModalOpen(false)}
-      />
+      <Suspense fallback={null}>
+        {isKeyboardModalOpen && (
+          <KeyboardShortcutsModal
+            isOpen={isKeyboardModalOpen}
+            onClose={() => setIsKeyboardModalOpen(false)}
+          />
+        )}
+      </Suspense>
+
       {/* QUERY HISTORY MODAL POPUP */}
-      <QueryHistoryModal
-        isOpen={isQueryHistoryModalOpen}
-        onClose={() => setIsQueryHistoryModalOpen(false)}
-        history={history}
-        onSelectHistoryItem={(item) => handleSelectHistoryItem(item)}
-        onClearHistory={clearHistory}
-      />
+      <Suspense fallback={null}>
+        {isQueryHistoryModalOpen && (
+          <QueryHistoryModal
+            isOpen={isQueryHistoryModalOpen}
+            onClose={() => setIsQueryHistoryModalOpen(false)}
+            history={history}
+            onSelectHistoryItem={(item) => handleSelectHistoryItem(item)}
+            onClearHistory={clearHistory}
+          />
+        )}
+      </Suspense>
     </div>
   );
 };

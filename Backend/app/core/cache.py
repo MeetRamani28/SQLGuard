@@ -17,7 +17,11 @@ class QueryCacheManager:
         self.total_saved_ms = 0
 
     def _generate_key(self, question: str, db_config: Optional[Dict[str, Any]] = None) -> str:
+        # High-performance normalization for max cache hit ratio
+        import re
         raw_str = question.strip().lower()
+        raw_str = re.sub(r'[^\w\s]', '', raw_str)  # Strip punctuation (?, ., !)
+        raw_str = re.sub(r'\s+', ' ', raw_str)     # Collapse extra spaces
         if db_config:
             raw_str += ":" + json.dumps(db_config, sort_keys=True)
         return hashlib.sha256(raw_str.encode("utf-8")).hexdigest()

@@ -165,27 +165,27 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-5">
+    <div className="fixed inset-0 z-50 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-[#FFFFFF] border border-[#E2E8F0] w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-5 text-[#0F172A]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div className="flex items-center gap-2 text-sky-400 font-semibold text-base">
-            <Database className="w-5 h-5" />
+        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+          <div className="flex items-center gap-2 text-[#047857] font-semibold text-base">
+            <Database className="w-5 h-5 text-[#10B981]" />
             <span>Database Connection Manager</span>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleResetToDemo}
-              className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-sky-300 border border-sky-500/30 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+              className="px-2.5 py-1 text-xs bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#047857] border border-[#10B981]/30 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
               title="Reset to built-in Demo E-Commerce DB"
             >
-              <RotateCcw className="w-3 h-3 text-sky-400" />
+              <RotateCcw className="w-3 h-3 text-[#10B981]" />
               <span>Use Demo DB</span>
             </button>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white cursor-pointer transition-colors p-1"
+              className="text-[#64748B] hover:text-[#0F172A] cursor-pointer transition-colors p-1"
             >
               <X className="w-5 h-5" />
             </button>
@@ -193,7 +193,7 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+        <div className="flex bg-[#F8FAFC] p-1 rounded-xl border border-[#E2E8F0] text-xs">
           <button
             type="button"
             onClick={() => {
@@ -202,8 +202,8 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
             }}
             className={`flex-1 py-2 rounded-lg font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
               activeTab === "url"
-                ? "bg-sky-600 text-white shadow"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-[#10B981] text-white shadow-xs font-bold"
+                : "text-[#047857] hover:text-[#0F172A]"
             }`}
           >
             <Link className="w-3.5 h-3.5" />
@@ -218,8 +218,8 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
             }}
             className={`flex-1 py-2 rounded-lg font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
               activeTab === "postgres"
-                ? "bg-sky-600 text-white shadow"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-[#10B981] text-white shadow-xs font-bold"
+                : "text-[#047857] hover:text-[#0F172A]"
             }`}
           >
             <Server className="w-3.5 h-3.5" />
@@ -234,8 +234,8 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
             }}
             className={`flex-1 py-2 rounded-lg font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
               activeTab === "sqlite"
-                ? "bg-sky-600 text-white shadow"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-[#10B981] text-white shadow-xs font-bold"
+                : "text-[#047857] hover:text-[#0F172A]"
             }`}
           >
             <FileCode className="w-3.5 h-3.5" />
@@ -250,11 +250,11 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
             }}
             className={`flex-1 py-2 rounded-lg font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
               activeTab === "presets"
-                ? "bg-sky-600 text-white shadow"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-[#10B981] text-white shadow-xs font-bold"
+                : "text-[#047857] hover:text-[#0F172A]"
             }`}
           >
-            <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+            <Bookmark className="w-3.5 h-3.5 text-[#D97706]" />
             <span>Presets ({savedPresets.length})</span>
           </button>
         </div>
@@ -263,8 +263,8 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
         {activeTab === "presets" ? (
           <div className="space-y-3 text-xs max-h-72 overflow-y-auto custom-scrollbar">
             {savedPresets.length === 0 ? (
-              <div className="text-center p-6 text-slate-500 space-y-1">
-                <Bookmark className="w-8 h-8 text-slate-700 mx-auto" />
+              <div className="text-center p-6 text-[#64748B] space-y-1">
+                <Bookmark className="w-8 h-8 text-[#94A3B8] mx-auto" />
                 <p>No saved database presets yet.</p>
                 <p className="text-[11px]">Save connections to quickly select them later!</p>
               </div>
@@ -273,13 +273,13 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
                 <div
                   key={preset.id}
                   onClick={() => handleSelectPreset(preset)}
-                  className="p-3 bg-slate-950 border border-slate-800/80 hover:border-sky-500/50 rounded-xl flex items-center justify-between cursor-pointer transition-all group"
+                  className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#10B981]/50 rounded-xl flex items-center justify-between cursor-pointer transition-all group shadow-xs"
                 >
                   <div className="space-y-0.5">
-                    <span className="font-semibold text-sky-300 block text-sm group-hover:text-sky-200">
+                    <span className="font-semibold text-[#047857] block text-sm group-hover:text-[#10B981]">
                       {preset.name}
                     </span>
-                    <span className="text-[11px] text-slate-500 font-mono block truncate max-w-xs">
+                    <span className="text-[11px] text-[#64748B] font-mono block truncate max-w-xs">
                       {preset.config.connection_url ||
                         `${preset.config.host}:${preset.config.port}/${preset.config.dbname}` ||
                         preset.config.sqlite_path}
@@ -289,7 +289,7 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
                   <button
                     type="button"
                     onClick={(e) => handleDeletePreset(preset.id, e)}
-                    className="p-1.5 text-slate-500 hover:text-rose-400 cursor-pointer transition-colors"
+                    className="p-1.5 text-[#94A3B8] hover:text-rose-600 cursor-pointer transition-colors"
                     title="Delete Preset"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -302,7 +302,7 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             {activeTab === "url" && (
               <div className="space-y-2">
-                <label className="block text-slate-300 font-medium">
+                <label className="block text-[#047857] font-medium">
                   Live Database Connection String / URL
                 </label>
                 <input
@@ -313,9 +313,9 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
                     setForm({ ...form, connection_url: e.target.value })
                   }
                   placeholder="postgresql://postgres.ref:pass@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-slate-200 placeholder-slate-600 font-mono focus:border-sky-500 focus:outline-none"
+                  className="w-full bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg p-3 text-[#0F172A] placeholder-slate-400 font-mono focus:border-[#10B981] focus:outline-none shadow-xs"
                 />
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-[#64748B]">
                   Tip: For Supabase on IPv4 networks, use the Pooler URL (aws-0-[region].pooler.supabase.com on port 6543/5432).
                 </p>
               </div>
@@ -324,7 +324,7 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
             {activeTab === "postgres" && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-slate-300 mb-1 font-medium">
+                  <label className="block text-[#047857] mb-1 font-medium">
                     Host / Server IP
                   </label>
                   <input
@@ -333,13 +333,13 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
                     value={form.host || ""}
                     onChange={(e) => setForm({ ...form, host: e.target.value })}
                     placeholder="e.g. localhost or db.company.com"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-sky-500 focus:outline-none"
+                    className="w-full bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg p-2.5 text-[#0F172A] focus:border-[#10B981] focus:outline-none shadow-xs"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 mb-1 font-medium">Port</label>
+                    <label className="block text-[#047857] mb-1 font-medium">Port</label>
                     <input
                       type="number"
                       required
@@ -347,11 +347,11 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
                       onChange={(e) =>
                         setForm({ ...form, port: parseInt(e.target.value) || 5432 })
                       }
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-sky-500 focus:outline-none"
+                      className="w-full bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg p-2.5 text-[#0F172A] focus:border-[#10B981] focus:outline-none shadow-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-300 mb-1 font-medium">
+                    <label className="block text-[#047857] mb-1 font-medium">
                       Database Name
                     </label>
                     <input
@@ -360,40 +360,40 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
                       value={form.dbname || ""}
                       onChange={(e) => setForm({ ...form, dbname: e.target.value })}
                       placeholder="e.g. sales_db"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-sky-500 focus:outline-none"
+                      className="w-full bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg p-2.5 text-[#0F172A] focus:border-[#10B981] focus:outline-none shadow-xs"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 mb-1 font-medium">Username</label>
+                    <label className="block text-[#047857] mb-1 font-medium">Username</label>
                     <input
                       type="text"
                       required
                       value={form.user || ""}
                       onChange={(e) => setForm({ ...form, user: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-sky-500 focus:outline-none"
+                      className="w-full bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg p-2.5 text-[#0F172A] focus:border-[#10B981] focus:outline-none shadow-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-300 mb-1 font-medium">Password</label>
+                    <label className="block text-[#047857] mb-1 font-medium">Password</label>
                     <input
                       type="password"
                       required
                       value={form.password || ""}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-sky-500 focus:outline-none"
+                      className="w-full bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg p-2.5 text-[#0F172A] focus:border-[#10B981] focus:outline-none shadow-xs"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 mb-1 font-medium">SSL Mode</label>
+                  <label className="block text-[#047857] mb-1 font-medium">SSL Mode</label>
                   <select
                     value={form.sslmode || "prefer"}
                     onChange={(e) => setForm({ ...form, sslmode: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-sky-500 focus:outline-none"
+                    className="w-full bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg p-2.5 text-[#0F172A] focus:border-[#10B981] focus:outline-none shadow-xs"
                   >
                     <option value="prefer">Prefer (Default)</option>
                     <option value="require">Require (SSL / Cloud DBs)</option>
@@ -405,7 +405,7 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
 
             {activeTab === "sqlite" && (
               <div className="space-y-2">
-                <label className="block text-slate-300 font-medium">
+                <label className="block text-[#047857] font-medium">
                   SQLite Database File Path
                 </label>
                 <input
@@ -416,24 +416,24 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
                     setForm({ ...form, sqlite_path: e.target.value })
                   }
                   placeholder="e.g. F:/Projects/my_data.db or app.db"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-slate-200 placeholder-slate-600 font-mono focus:border-sky-500 focus:outline-none"
+                  className="w-full bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg p-3 text-[#0F172A] placeholder-slate-400 font-mono focus:border-[#10B981] focus:outline-none shadow-xs"
                 />
               </div>
             )}
 
             {/* Save Preset Input Bar */}
-            <div className="pt-2 flex items-center gap-2 border-t border-slate-800/60">
+            <div className="pt-2 flex items-center gap-2 border-t border-[#E2E8F0]">
               <input
                 type="text"
                 value={presetNameInput}
                 onChange={(e) => setPresetNameInput(e.target.value)}
                 placeholder="Preset Name e.g. Supabase Prod DB..."
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:border-sky-500 focus:outline-none"
+                className="flex-1 bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg p-2 text-[#0F172A] focus:border-[#10B981] focus:outline-none shadow-xs"
               />
               <button
                 type="button"
                 onClick={handleSavePreset}
-                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-lg font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                className="px-3 py-2 bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#B45309] rounded-lg font-medium flex items-center gap-1 cursor-pointer transition-colors border border-[#D97706]/30"
                 title="Save as preset"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -446,31 +446,31 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
               <div
                 className={`p-3 rounded-lg border text-xs flex items-center gap-2 ${
                   testResult.success
-                    ? "bg-emerald-950/60 border-emerald-800/60 text-emerald-300"
-                    : "bg-rose-950/60 border-rose-800/60 text-rose-300"
+                    ? "bg-[#ECFDF5] border-[#10B981]/30 text-[#047857]"
+                    : "bg-rose-50 border-rose-200 text-rose-700"
                 }`}
               >
                 {testResult.success ? (
-                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <Check className="w-4 h-4 text-[#10B981] shrink-0" />
                 ) : (
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                 )}
                 <span>{testResult.message}</span>
               </div>
             )}
 
             {/* Action Buttons */}
-            <div className="pt-2 flex items-center justify-between border-t border-slate-800">
+            <div className="pt-2 flex items-center justify-between border-t border-[#E2E8F0]">
               <button
                 type="button"
                 onClick={handleTestConnection}
                 disabled={testing}
-                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
+                className="px-3 py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] border border-[#E2E8F0] font-medium rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
               >
                 {testing ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-400" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#10B981]" />
                 ) : (
-                  <Database className="w-3.5 h-3.5 text-sky-400" />
+                  <Database className="w-3.5 h-3.5 text-[#10B981]" />
                 )}
                 <span>{testing ? "Testing..." : "Test Connection"}</span>
               </button>
@@ -479,13 +479,13 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg cursor-pointer transition-colors"
+                  className="px-4 py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] rounded-lg cursor-pointer transition-colors border border-[#E2E8F0]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg flex items-center gap-1 cursor-pointer transition-colors shadow-lg shadow-sky-600/20"
+                  className="px-4 py-2 bg-[#10B981] hover:bg-[#059669] text-white font-semibold rounded-lg flex items-center gap-1 cursor-pointer transition-colors shadow-md shadow-[#10B981]/20"
                 >
                   <Check className="w-4 h-4" /> Save Connection
                 </button>

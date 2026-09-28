@@ -103,8 +103,22 @@ def get_db_connection(db_config: dict = None):
         conn.execute("PRAGMA busy_timeout = 5000;")
         return conn, "sqlite"
     else:
-        conn = psycopg2.connect(
-            settings.DATABASE_URL,
-            cursor_factory=RealDictCursor
-        )
-        return conn, "postgres"
+        url = settings.DATABASE_URL
+        if "postgresql" in url and "sslmode" not in url:
+            sep = "&" if "?" in url else "?"
+            url += f"{sep}sslmode=require"
+        try:
+            conn = psycopg2.connect(
+                url,
+                cursor_factory=RealDictCursor,
+                connect_timeout=8
+            )
+            return conn, "postgres"
+        except Exception as prod_err:
+            db_path = os.path.abspath(settings.SQLITE_DB_PATH)
+            if not os.path.exists(db_path):
+                open(db_path, "a").close()
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA foreign_keys = ON;")
+            return conn, "sqlite"

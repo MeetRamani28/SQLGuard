@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+@theme {
+  --color-bg-obsidian: #FFFFFF;
+  --color-surface-charcoal: #F8FAFC;
+  --color-surface-input: #F1F5F9;
+  --color-border-subdued: #E2E8F0;
+  --color-text-white: #0F172A;
+  --color-text-silver: #475569;
+  --color-text-faint: #64748B;
+  --color-accent-emerald: #10B981;
+  --color-accent-hover: #059669;
+  --color-accent-soft: rgba(16, 185, 129, 0.12);
+  --color-emerald-guard: #10B981;
+  --color-danger-rose: #E11D48;
+  --color-warning-amber: #D97706;
+  --color-sky-info: #0284C7;
+}
+
+:root {
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-2: #F1F5F9;
+  --border: #E2E8F0;
+  --text: #0F172A;
+  --text-muted: #475569;
+  --text-faint: #64748B;
+  --accent: #10B981;
+  --accent-hover: #059669;
+  --accent-soft: rgba(16, 185, 129, 0.12);
+  --on-accent: #FFFFFF;
+  --guard-passed: #10B981;
+  --guard-blocked: #E11D48;
+  --guard-retry: #D97706;
+}
+
 html,
 body,
 #root {
@@ -9,9 +43,10 @@ body,
   overflow-x: hidden;
   margin: 0;
   padding: 0;
-  background-color: #0f172a;
-  color-scheme: dark;
-  scrollbar-color: #334257 #0f172a;
+  background-color: #F8FAFC;
+  color: #0F172A;
+  color-scheme: light;
+  scrollbar-color: #CBD5E1 #F8FAFC;
   scrollbar-width: thin;
 }
 
@@ -22,17 +57,17 @@ body,
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #F8FAFC;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334257;
+  background: #CBD5E1;
   border-radius: 9999px;
-  border: 2px solid #0f172a;
+  border: 2px solid #F8FAFC;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #548CA8;
+  background: #10B981;
 }
 
 /* Hide scrollbars completely where explicitly requested (.no-scrollbar) */
@@ -44,7 +79,7 @@ body,
   scrollbar-width: none;
 }
 
-/* Custom dark scrollbar styling matching Deep Slate Oceanic theme */
+/* Custom scrollbar styling matching Supabase Emerald Light Theme */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -53,10 +88,10 @@ body,
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334257;
+  background: #CBD5E1;
   border-radius: 9999px;
-  border: 1px solid rgba(84, 140, 168, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #548CA8;
+  background: #10B981;
 }

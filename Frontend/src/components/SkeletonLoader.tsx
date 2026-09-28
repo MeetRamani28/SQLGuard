@@ -7,37 +7,37 @@ export const SkeletonLoader: React.FC = () => {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
-      className="w-full bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl space-y-5"
+      className="w-full bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-6 shadow-md space-y-5"
     >
       {/* Header bar skeleton */}
-      <div className="flex items-center justify-between border-b border-slate-800/60 pb-4">
+      <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-slate-800 animate-pulse" />
-          <div className="h-5 w-48 bg-slate-800 rounded-md animate-pulse" />
+          <div className="w-8 h-8 rounded-lg bg-[#E2E8F0] animate-pulse" />
+          <div className="h-5 w-48 bg-[#E2E8F0] rounded-md animate-pulse" />
         </div>
         <div className="flex items-center space-x-2">
-          <div className="h-6 w-16 bg-slate-800 rounded-full animate-pulse" />
-          <div className="h-6 w-24 bg-slate-800 rounded-full animate-pulse" />
+          <div className="h-6 w-16 bg-[#E2E8F0] rounded-full animate-pulse" />
+          <div className="h-6 w-24 bg-[#E2E8F0] rounded-full animate-pulse" />
         </div>
       </div>
 
       {/* SQL code block skeleton */}
-      <div className="space-y-2 bg-slate-950/70 p-4 rounded-xl border border-slate-800/40">
-        <div className="h-4 w-1/3 bg-slate-800 rounded animate-pulse" />
-        <div className="h-4 w-2/3 bg-slate-800 rounded animate-pulse" />
+      <div className="space-y-2 bg-[#F8FAFC] p-4 rounded-xl border border-[#E2E8F0]">
+        <div className="h-4 w-1/3 bg-[#CBD5E1] rounded animate-pulse" />
+        <div className="h-4 w-2/3 bg-[#CBD5E1] rounded animate-pulse" />
       </div>
 
       {/* Insight bar skeleton */}
-      <div className="h-10 bg-cyan-950/20 border border-cyan-500/10 rounded-lg p-3 flex items-center space-x-3">
-        <div className="w-4 h-4 rounded-full bg-cyan-500/20 animate-pulse" />
-        <div className="h-4 w-3/4 bg-slate-800 rounded animate-pulse" />
+      <div className="h-10 bg-[#ECFDF5] border border-[#10B981]/20 rounded-lg p-3 flex items-center space-x-3">
+        <div className="w-4 h-4 rounded-full bg-[#10B981]/30 animate-pulse" />
+        <div className="h-4 w-3/4 bg-[#CBD5E1] rounded animate-pulse" />
       </div>
 
       {/* Content grid / Data visual skeleton */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-        <div className="h-28 bg-slate-800/50 rounded-xl animate-pulse" />
-        <div className="h-28 bg-slate-800/50 rounded-xl animate-pulse" />
-        <div className="h-28 bg-slate-800/50 rounded-xl animate-pulse text-xs text-slate-500 flex items-center justify-center">
+        <div className="h-28 bg-[#F1F5F9] rounded-xl animate-pulse" />
+        <div className="h-28 bg-[#F1F5F9] rounded-xl animate-pulse" />
+        <div className="h-28 bg-[#F1F5F9] rounded-xl animate-pulse text-xs text-[#64748B] flex items-center justify-center font-medium">
           Analyzing SQL & Executing RAG...
         </div>
       </div>

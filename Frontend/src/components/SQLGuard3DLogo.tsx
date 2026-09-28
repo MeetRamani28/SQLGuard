@@ -1,7 +1,17 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 
-export const SQLGuard3DLogo: React.FC<{ size?: number }> = ({ size = 36 }) => {
+interface SQLGuard3DLogoProps {
+  size?: number;
+  className?: string;
+  animate?: boolean;
+}
+
+export const SQLGuard3DLogo: React.FC<SQLGuard3DLogoProps> = ({
+  size = 36,
+  className = "",
+  animate = true,
+}) => {
   useEffect(() => {
     try {
       let faviconLink = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
@@ -21,18 +31,20 @@ export const SQLGuard3DLogo: React.FC<{ size?: number }> = ({ size = 36 }) => {
     <motion.div
       whileHover={{ scale: 1.12, rotateY: 15, rotateX: -10 }}
       whileTap={{ scale: 0.95 }}
-      className="relative flex items-center justify-center cursor-pointer shrink-0 group"
+      animate={animate ? { y: [0, -3, 0] } : undefined}
+      transition={animate ? { duration: 3, repeat: Infinity, ease: "easeInOut" } : undefined}
+      className={`relative flex items-center justify-center cursor-pointer shrink-0 group ${className}`}
       style={{ width: size, height: size, perspective: 1000 }}
-      title="SQLGuard Neon Ribbon Shield Engine"
+      title="SQLGuard 3D Analytics Engine"
     >
       {/* Cyan Neon Glow Halo Effect */}
-      <div className="absolute inset-0 bg-sky-400/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl blur-md" />
+      <div className="absolute inset-0 bg-[#3ECF8E]/25 opacity-40 group-hover:opacity-100 transition-opacity rounded-xl blur-md" />
 
-      {/* 100% Transparent Option 2 Emblem Image */}
+      {/* 3D Emblem Image */}
       <img
         src="/logo_transparent.png"
         alt="SQLGuard Emblem"
-        className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(56,189,248,0.7)] transition-transform duration-300 relative z-10"
+        className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(62,207,142,0.7)] transition-transform duration-300 relative z-10"
         style={{ width: size, height: size }}
       />
     </motion.div>

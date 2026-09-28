@@ -30,7 +30,7 @@ export const Database3DCanvas: React.FC = () => {
     const colors = new Float32Array(particleCount * 3);
 
     const cyanColor = new THREE.Color('#38bdf8');
-    const emeraldColor = new THREE.Color('#34d399');
+    const emeraldColor = new THREE.Color('#3ECF8E');
 
     for (let i = 0; i < particleCount; i++) {
       positions[i * 3] = (Math.random() - 0.5) * 35;

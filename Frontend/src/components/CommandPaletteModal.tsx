@@ -64,36 +64,36 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/80 p-4 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-[#0F172A]/40 p-4 backdrop-blur-sm">
         <motion.div
           initial={{ opacity: 0, y: -20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
-          className="relative flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
+          className="relative flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-2xl text-[#0F172A]"
         >
           {/* Search Header */}
-          <div className="flex items-center border-b border-slate-800 px-4 py-3.5 bg-slate-950">
-            <Search className="h-5 w-5 text-[#548CA8] mr-3 shrink-0" />
+          <div className="flex items-center border-b border-[#E2E8F0] px-4 py-3.5 bg-[#F8FAFC]">
+            <Search className="h-5 w-5 text-[#10B981] mr-3 shrink-0" />
             <input
               type="text"
               autoFocus
               placeholder="Type a command or search feature... (Ctrl + K)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none"
+              className="w-full bg-transparent text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none"
             />
             <button
               onClick={onClose}
-              className="rounded-lg p-1 text-slate-500 hover:bg-slate-800 hover:text-white"
+              className="rounded-lg p-1 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Command List */}
-          <div className="max-h-96 overflow-y-auto p-3 space-y-1">
+          <div className="max-h-96 overflow-y-auto p-3 space-y-1 custom-scrollbar bg-[#FFFFFF]">
             {filtered.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-500">
+              <div className="p-8 text-center text-xs text-[#64748B]">
                 No commands matching "{query}"
               </div>
             ) : (
@@ -106,20 +106,20 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                       onSelectAction(item.id);
                       onClose();
                     }}
-                    className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-800/80 transition-colors group cursor-pointer text-left"
+                    className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-[#F1F5F9] transition-colors group cursor-pointer text-left border border-transparent hover:border-[#E2E8F0]"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-lg bg-slate-800 group-hover:bg-[#548CA8]/20 text-[#548CA8] transition-colors border border-slate-700">
+                      <div className="p-2 rounded-lg bg-[#ECFDF5] text-[#10B981] border border-[#10B981]/30">
                         <Icon className="h-4 w-4" />
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-white group-hover:text-[#548CA8] transition-colors">
+                        <div className="text-xs font-bold text-[#0F172A] group-hover:text-[#10B981] transition-colors">
                           {item.title}
                         </div>
-                        <div className="text-[11px] text-slate-400">{item.desc}</div>
+                        <div className="text-[11px] text-[#047857]">{item.desc}</div>
                       </div>
                     </div>
-                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-[#F8FAFC] text-[#047857] border border-[#E2E8F0]">
                       {item.category}
                     </span>
                   </button>
@@ -128,9 +128,9 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             )}
           </div>
 
-          <div className="flex items-center justify-between border-t border-slate-800 bg-slate-950 px-4 py-2.5 text-[11px] text-slate-500">
-            <span className="flex items-center gap-1">
-              <Terminal className="h-3.5 w-3.5 text-[#548CA8]" /> SQLGuard Command Palette
+          <div className="flex items-center justify-between border-t border-[#E2E8F0] bg-[#F8FAFC] px-4 py-2.5 text-[11px] text-[#64748B]">
+            <span className="flex items-center gap-1 font-medium text-[#047857]">
+              <Terminal className="h-3.5 w-3.5 text-[#10B981]" /> SQLGuard Command Palette
             </span>
             <span>Use ↑ ↓ to navigate, ESC to close</span>
           </div>

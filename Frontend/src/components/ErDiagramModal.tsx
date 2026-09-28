@@ -51,22 +51,22 @@ export const ErDiagramModal: React.FC<ErDiagramModalProps> = ({ isOpen, onClose 
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/40 p-4 backdrop-blur-sm">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
+          className="relative flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-2xl text-[#0F172A]"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/90 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-[#E2E8F0] bg-[#F8FAFC] px-6 py-4">
             <div className="flex items-center space-x-3">
-              <div className="rounded-xl bg-cyan-500/10 p-2 text-cyan-400 border border-cyan-500/20">
+              <div className="rounded-xl bg-[#E0F2FE] p-2 text-[#0284C7] border border-[#0284C7]/30">
                 <Network className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Interactive ER Schema Diagram</h2>
-                <p className="text-xs text-slate-400">
+                <h2 className="text-xl font-bold text-[#0F172A]">Interactive ER Schema Diagram</h2>
+                <p className="text-xs text-[#047857]">
                   Visual Entity-Relationship graph & foreign key dependencies
                 </p>
               </div>
@@ -75,14 +75,14 @@ export const ErDiagramModal: React.FC<ErDiagramModalProps> = ({ isOpen, onClose 
               <button
                 onClick={loadErData}
                 disabled={loading}
-                className="flex items-center space-x-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700"
+                className="flex items-center space-x-1.5 rounded-lg border border-[#E2E8F0] bg-[#FFFFFF] px-3 py-1.5 text-xs text-[#047857] hover:bg-[#F1F5F9] font-medium shadow-xs"
               >
-                <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-3.5 w-3.5 text-[#10B981] ${loading ? "animate-spin" : ""}`} />
                 <span>Refresh Graph</span>
               </button>
               <button
                 onClick={onClose}
-                className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="rounded-lg p-2 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -90,14 +90,14 @@ export const ErDiagramModal: React.FC<ErDiagramModalProps> = ({ isOpen, onClose 
           </div>
 
           {/* Diagram Canvas */}
-          <div className="flex-1 overflow-auto p-6 bg-slate-950/90">
+          <div className="flex-1 overflow-auto p-6 bg-[#F8FAFC] custom-scrollbar">
             {loading ? (
-              <div className="flex h-64 items-center justify-center text-sm text-slate-400">
+              <div className="flex h-64 items-center justify-center text-sm text-[#047857]">
                 Generating Entity-Relationship Diagram...
               </div>
             ) : nodes.length === 0 ? (
-              <div className="flex h-64 flex-col items-center justify-center space-y-2 text-slate-400">
-                <Database className="h-10 w-10 text-slate-600" />
+              <div className="flex h-64 flex-col items-center justify-center space-y-2 text-[#047857]">
+                <Database className="h-10 w-10 text-[#94A3B8]" />
                 <p>No table relationships detected in schema.</p>
               </div>
             ) : (
@@ -105,11 +105,11 @@ export const ErDiagramModal: React.FC<ErDiagramModalProps> = ({ isOpen, onClose 
                 {nodes.map((node) => (
                   <div
                     key={node.id}
-                    className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-xl transition-all hover:border-cyan-500/40"
+                    className="rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] p-4 shadow-sm transition-all hover:border-[#0284C7]/50"
                   >
-                    <div className="flex items-center space-x-2 border-b border-slate-800 pb-2.5">
-                      <Table className="h-4 w-4 text-cyan-400" />
-                      <h3 className="font-bold text-white text-sm font-mono">{node.label}</h3>
+                    <div className="flex items-center space-x-2 border-b border-[#E2E8F0] pb-2.5">
+                      <Table className="h-4 w-4 text-[#0284C7]" />
+                      <h3 className="font-bold text-[#0F172A] text-sm font-mono">{node.label}</h3>
                     </div>
                     <div className="mt-3 space-y-1 font-mono text-xs">
                       {node.columns.map((col, idx) => {
@@ -118,12 +118,12 @@ export const ErDiagramModal: React.FC<ErDiagramModalProps> = ({ isOpen, onClose 
                           <div
                             key={idx}
                             className={`flex items-center justify-between rounded px-2 py-1 ${
-                              isPk ? "bg-cyan-950/40 text-cyan-300 font-semibold" : "text-slate-400"
+                              isPk ? "bg-[#E0F2FE] text-[#0369A1] font-semibold" : "text-[#0F172A]"
                             }`}
                           >
                             <span>{col}</span>
                             {isPk && (
-                              <span className="text-[10px] text-cyan-400 bg-cyan-500/10 px-1.5 py-0.2 rounded border border-cyan-500/20">
+                              <span className="text-[10px] text-[#0284C7] bg-[#FFFFFF] px-1.5 py-0.2 rounded border border-[#0284C7]/30">
                                 {col === "id" ? "PK" : "FK"}
                               </span>
                             )}
@@ -138,21 +138,21 @@ export const ErDiagramModal: React.FC<ErDiagramModalProps> = ({ isOpen, onClose 
 
             {/* Relationship Edges Summary */}
             {edges.length > 0 && (
-              <div className="mt-8 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center space-x-2">
-                  <Layers className="h-4 w-4 text-cyan-400" />
+              <div className="mt-8 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] p-4 shadow-xs">
+                <h4 className="text-xs font-bold text-[#047857] uppercase tracking-wider mb-2 flex items-center space-x-2">
+                  <Layers className="h-4 w-4 text-[#0284C7]" />
                   <span>Detected Table Foreign Key Relationships ({edges.length})</span>
                 </h4>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
                   {edges.map((e, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center space-x-2 rounded-lg bg-slate-950 p-2 text-xs font-mono text-slate-300 border border-slate-800"
+                      className="flex items-center space-x-2 rounded-lg bg-[#F8FAFC] p-2 text-xs font-mono text-[#0F172A] border border-[#E2E8F0]"
                     >
-                      <span className="text-cyan-400 font-bold">{e.source}</span>
-                      <span className="text-slate-500">→</span>
-                      <span className="text-emerald-400 font-bold">{e.target}</span>
-                      <span className="text-[10px] text-slate-400">({e.label})</span>
+                      <span className="text-[#0284C7] font-bold">{e.source}</span>
+                      <span className="text-[#94A3B8]">→</span>
+                      <span className="text-[#047857] font-bold">{e.target}</span>
+                      <span className="text-[10px] text-[#64748B]">({e.label})</span>
                     </div>
                   ))}
                 </div>
