@@ -165,7 +165,7 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-[#FFFFFF] border border-[#E2E8F0] w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-5 text-[#0F172A]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">

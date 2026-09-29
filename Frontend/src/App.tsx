@@ -508,7 +508,7 @@ const MainAppContent: React.FC<{
 
       {/* LIVE DASHBOARD MODAL */}
       {isDashboardModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#121212]/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+        <div className="fixed inset-0 z-[200] bg-[#121212]/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
           <div className="bg-[#333333] border border-[#3ECF8E]/60 w-full max-w-6xl h-[88vh] rounded-2xl p-4 sm:p-6 shadow-2xl flex flex-col space-y-4 text-[#FFFFFF]">
             <div className="flex items-center justify-between border-b border-[#3ECF8E]/50 pb-3">
               <div className="flex items-center gap-2 text-[#3ECF8E] font-bold text-base">
@@ -556,7 +556,7 @@ const MainAppContent: React.FC<{
 
       {/* AST SECURITY AUDIT LOG MODAL */}
       {isAuditLogModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#121212]/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[200] bg-[#121212]/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#232323] border border-[#333333] w-full max-w-xl rounded-2xl p-6 shadow-2xl space-y-4 text-xs text-[#FFFFFF]">
             <div className="flex items-center justify-between border-b border-[#333333]/60 pb-3">
               <div className="flex items-center gap-2 text-[#3ECF8E] font-bold text-base">
@@ -639,7 +639,7 @@ const MainAppContent: React.FC<{
           />
         )}
 
-        {/* Sidebar Container - Fully Responsive Top-Level Drawer on Mobile (z-[100]) */}
+        {/* Sidebar Container - Fully Responsive Top-Level Drawer on Mobile (z-[100]), Lower z-index on Desktop (md:z-10) */}
         <AnimatePresence mode="wait">
           {isSidebarOpen && (
             <motion.aside
@@ -647,7 +647,7 @@ const MainAppContent: React.FC<{
               animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="h-full bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col shrink-0 overflow-hidden z-[100] fixed md:relative left-0 top-0 bottom-0 shadow-2xl md:shadow-none w-72 max-w-[85vw]"
+              className="h-full bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col shrink-0 overflow-hidden z-[100] md:z-10 fixed md:relative left-0 top-0 bottom-0 shadow-2xl md:shadow-none w-72 max-w-[85vw]"
             >
               {/* Sidebar Header for Mobile */}
               <div className="p-3 border-b border-[#E2E8F0] flex items-center justify-between gap-2 bg-[#F8FAFC]">

@@ -41,7 +41,7 @@ export const QueryHistoryModal: React.FC<QueryHistoryModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-[#0F172A]/40 p-4 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[200] flex items-start justify-center pt-20 bg-[#0F172A]/40 p-4 backdrop-blur-sm">
         <motion.div
           initial={{ opacity: 0, y: -20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}

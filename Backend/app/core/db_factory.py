@@ -40,12 +40,12 @@ def get_db_connection(db_config: dict = None):
                     conn = psycopg2.connect(
                         url,
                         cursor_factory=RealDictCursor,
-                        connect_timeout=8
+                        connect_timeout=4
                     )
                     return conn, "postgres"
                 except Exception as first_err:
                     err_str = str(first_err)
-                    # Smart Supabase IPv4 Pooler Auto-Fallback
+                    # Smart Supabase IPv4 Pooler Auto-Fallback across all regions worldwide
                     match = re.search(r'db\.([a-z0-9]+)\.supabase\.co', url)
                     if match:
                         ref = match.group(1)
@@ -66,12 +66,22 @@ def get_db_connection(db_config: dict = None):
                         dbname = dbname_match.group(1) if dbname_match else "postgres"
 
                         regions = [
-                            "aws-0-us-east-1.pooler.supabase.com",
-                            "aws-0-ap-south-1.pooler.supabase.com",
-                            "aws-0-eu-central-1.pooler.supabase.com",
-                            "aws-0-us-west-1.pooler.supabase.com",
+                            "aws-0-ap-northeast-2.pooler.supabase.com", # Seoul (User DB region)
+                            "aws-0-ap-southeast-1.pooler.supabase.com", # Singapore
+                            "aws-0-ap-south-1.pooler.supabase.com",     # Mumbai
+                            "aws-0-us-east-1.pooler.supabase.com",     # N. Virginia
+                            "aws-0-us-east-2.pooler.supabase.com",     # Ohio
+                            "aws-0-us-west-1.pooler.supabase.com",     # N. California
+                            "aws-0-us-west-2.pooler.supabase.com",     # Oregon
+                            "aws-0-eu-central-1.pooler.supabase.com",  # Frankfurt
+                            "aws-0-eu-west-1.pooler.supabase.com",     # Ireland
+                            "aws-0-eu-west-2.pooler.supabase.com",     # London
+                            "aws-0-ap-southeast-2.pooler.supabase.com", # Sydney
+                            "aws-0-ap-northeast-1.pooler.supabase.com", # Tokyo
+                            "aws-0-sa-east-1.pooler.supabase.com",     # São Paulo
+                            "aws-0-ca-central-1.pooler.supabase.com",  # Canada
                         ]
-                        ports = [6543, 5432]
+                        ports = [5432, 6543]
 
                         for reg in regions:
                             for p_num in ports:
@@ -83,8 +93,9 @@ def get_db_connection(db_config: dict = None):
                                         user=pooler_user,
                                         password=p_word,
                                         sslmode="require",
+                                        options=f"project={ref}",
                                         cursor_factory=RealDictCursor,
-                                        connect_timeout=4
+                                        connect_timeout=2
                                     )
                                     return conn, "postgres"
                                 except Exception:

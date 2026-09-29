@@ -73,7 +73,7 @@ export const SchemaExplorerModal: React.FC<SchemaExplorerModalProps> = ({
   ) || [];
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[200] bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
       <div className="bg-[#FFFFFF] border border-[#E2E8F0] w-full max-w-4xl h-[88vh] sm:h-[80vh] rounded-2xl p-3 sm:p-6 shadow-2xl flex flex-col space-y-3 sm:space-y-4 text-[#0F172A] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3 shrink-0">
