@@ -756,27 +756,27 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
       {/* 1.6 AI QUERY OPTIMIZER PANEL */}
       {showOptimizer && optimizerResult && (
-        <div className="rounded-xl border border-[#3ECF8E]/40 bg-[#232323]/90 p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-[#333333] pb-2">
+        <div className="rounded-xl border border-[#10B981]/30 bg-[#ECFDF5] p-4 space-y-3 shadow-xs">
+          <div className="flex items-center justify-between border-b border-[#10B981]/20 pb-2">
             <div className="flex items-center space-x-2">
-              <Gauge className="h-5 w-5 text-[#3ECF8E]" />
-              <span className="text-xs font-bold text-white uppercase tracking-wider">
+              <Gauge className="h-5 w-5 text-[#10B981]" />
+              <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
                 AI SQL Performance Optimizer & Tuning Plan
               </span>
             </div>
             <div className="flex items-center space-x-3 text-xs">
-              <span className="text-[#3ECF8E]">
-                Complexity: <strong className="text-[#3ECF8E] font-bold">{optimizerResult.complexity_score}</strong>
+              <span className="text-[#047857]">
+                Complexity: <strong className="text-[#047857] font-bold">{optimizerResult.complexity_score}</strong>
               </span>
-              <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 font-bold text-[#3ECF8E] border border-emerald-500/20">
+              <span className="rounded-full bg-[#FFFFFF] px-2.5 py-0.5 font-bold text-[#047857] border border-[#10B981]/30">
                 Performance Score: {optimizerResult.performance_score}/100
               </span>
             </div>
           </div>
           <div className="space-y-1.5 pl-2">
             {optimizerResult.recommendations.map((rec: string, i: number) => (
-              <div key={i} className="flex items-start space-x-2 text-xs text-[#3ECF8E]">
-                <span className="text-[#3ECF8E] font-bold">•</span>
+              <div key={i} className="flex items-start space-x-2 text-xs text-[#047857]">
+                <span className="text-[#10B981] font-bold">•</span>
                 <span>{rec}</span>
               </div>
             ))}
@@ -786,12 +786,12 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
       {/* 2. EXECUTIVE SUMMARY HIGHLIGHTS */}
       {executiveSummary && executiveSummary.length > 0 && !isForbidden && (
-        <div className="p-3 bg-[#232323] border border-[#3ECF8E]/40 rounded-xl space-y-1.5 text-xs text-[#FFFFFF]">
-          <div className="flex items-center gap-2 text-[#3ECF8E] font-bold text-xs">
-            <Sparkles className="w-4 h-4 text-[#3ECF8E]" />
+        <div className="p-3.5 bg-[#ECFDF5] border border-[#10B981]/30 rounded-xl space-y-1.5 text-xs text-[#0F172A] shadow-xs">
+          <div className="flex items-center gap-2 text-[#047857] font-bold text-xs">
+            <Sparkles className="w-4 h-4 text-[#10B981]" />
             <span>AI EXECUTIVE SUMMARY & KEY INSIGHTS</span>
           </div>
-          <ul className="space-y-1 text-[#3ECF8E] list-disc list-inside text-[11px] leading-relaxed">
+          <ul className="space-y-1 text-[#047857] list-disc list-inside text-[11px] leading-relaxed">
             {executiveSummary.map((bullet: string, idx: number) => (
               <li key={idx}>{bullet}</li>
             ))}
@@ -801,48 +801,48 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
       {/* 3. SECURITY ALERT OR SYNTHESIZED SQL QUERY */}
       {isForbidden ? (
-        <div className="p-4 bg-[rgba(62,207,142,0.15)] border-2 border-[#F43F5E] rounded-xl space-y-2 text-[#F43F5E] text-xs shadow-md">
-          <div className="flex items-center gap-2 text-sm font-bold text-[#F43F5E]">
-            <Lock className="w-5 h-5 text-[#F43F5E] shrink-0" />
+        <div className="p-4 bg-rose-50 border-2 border-rose-500 rounded-xl space-y-2 text-rose-700 text-xs shadow-md">
+          <div className="flex items-center gap-2 text-sm font-bold text-rose-800">
+            <Lock className="w-5 h-5 text-rose-600 shrink-0" />
             <span>SECURITY VIOLATION BLOCKED BY AST GUARD</span>
           </div>
-          <p className="text-[#F43F5E]/90 font-mono text-xs leading-relaxed">
+          <p className="text-rose-700/90 font-mono text-xs leading-relaxed">
             Destructive operation (DELETE, DROP, UPDATE, INSERT, ALTER, or PRAGMA) detected and blocked. SQLGuard strictly permits read-only SELECT queries.
           </p>
         </div>
       ) : (
         sqlQuery && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold text-[#3ECF8E]">
+            <div className="flex items-center justify-between text-xs font-semibold text-[#047857]">
               <div className="flex items-center gap-2 flex-wrap">
-                <Code className="w-3.5 h-3.5 text-[#3ECF8E]" />
-                <span className="text-[11px] font-mono uppercase tracking-wider text-[#3ECF8E]">
+                <Code className="w-3.5 h-3.5 text-[#10B981]" />
+                <span className="text-[11px] font-mono uppercase tracking-wider text-[#047857]">
                   SYNTHESIZED SQL QUERY
                 </span>
-                <span className="flex items-center gap-1 text-[#3ECF8E] bg-[rgba(62,207,142,0.15)] px-2.5 py-0.5 rounded-lg border border-[#3ECF8E]/30 text-[11px] font-semibold">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#3ECF8E]" /> Guard Passed
+                <span className="flex items-center gap-1 text-[#047857] bg-[#ECFDF5] px-2.5 py-0.5 rounded-lg border border-[#10B981]/30 text-[11px] font-semibold">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" /> Guard Passed
                 </span>
               </div>
             </div>
 
             {/* Interactive SQL Playground Mode */}
             {isEditingSql ? (
-              <div className="space-y-2 bg-[#232323] p-3 rounded-xl border border-[#3ECF8E]/50">
+              <div className="space-y-2 bg-[#F8FAFC] p-3 rounded-xl border border-[#CBD5E1]">
                 <textarea
                   value={editedSql}
                   onChange={(e) => setEditedSql(e.target.value)}
                   rows={4}
-                  className="w-full bg-[#121212] text-[#3ECF8E] font-mono text-xs p-3 rounded-lg border border-[#333333] focus:outline-none focus:border-[#3ECF8E]"
+                  className="w-full bg-[#FFFFFF] text-[#0F172A] font-mono text-xs p-3 rounded-lg border border-[#CBD5E1] focus:outline-none focus:border-[#10B981]"
                 />
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#333333]/60 pt-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E2E8F0] pt-2">
                   <div className="flex items-center space-x-2">
-                    <Globe className="w-3.5 h-3.5 text-[#3ECF8E]" />
-                    <span className="text-[11px] text-[#3ECF8E]">Translate Dialect:</span>
+                    <Globe className="w-3.5 h-3.5 text-[#10B981]" />
+                    <span className="text-[11px] text-[#047857]">Translate Dialect:</span>
                     <select
                       value={targetDialect}
                       onChange={(e) => handleTranslateDialect(e.target.value)}
                       disabled={isTranslating}
-                      className="bg-[#121212] text-xs text-[#3ECF8E] font-mono rounded border border-[#333333] px-2 py-1 focus:outline-none"
+                      className="bg-[#FFFFFF] text-xs text-[#0F172A] font-mono rounded border border-[#CBD5E1] px-2 py-1 focus:outline-none"
                     >
                       <option value="postgres">PostgreSQL</option>
                       <option value="mysql">MySQL</option>
@@ -852,26 +852,26 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                       <option value="oracle">Oracle</option>
                       <option value="tsql">SQL Server</option>
                     </select>
-                    {isTranslating && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#3ECF8E]" />}
+                    {isTranslating && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#10B981]" />}
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={handleFormatSql}
-                      className="px-2.5 py-1.5 text-xs text-[#3ECF8E] bg-[#3ECF8E]/10 hover:bg-[#3ECF8E]/20 border border-[#3ECF8E]/30 rounded-lg cursor-pointer flex items-center gap-1"
+                      className="px-2.5 py-1.5 text-xs text-[#047857] bg-[#ECFDF5] hover:bg-[#D1FAE5] border border-[#10B981]/30 rounded-lg cursor-pointer flex items-center gap-1 font-medium"
                     >
-                      <Sparkles className="w-3 h-3 text-[#3ECF8E]" />
+                      <Sparkles className="w-3 h-3 text-[#10B981]" />
                       <span>Format SQL</span>
                     </button>
                     <button
                       onClick={() => setIsEditingSql(false)}
-                      className="px-3 py-1.5 text-xs text-[#3ECF8E] bg-[#232323] hover:bg-[#333333] rounded-lg cursor-pointer"
+                      className="px-3 py-1.5 text-xs text-[#64748B] bg-[#FFFFFF] hover:bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleRunPlaygroundSql}
                       disabled={isExecutingPlayground}
-                      className="px-3 py-1.5 text-xs text-[#FFFFFF] font-bold bg-[#3ECF8E] hover:bg-[#333333] rounded-lg flex items-center gap-1.5 cursor-pointer shadow-md"
+                      className="px-3 py-1.5 text-xs text-white font-bold bg-[#10B981] hover:bg-[#059669] rounded-lg flex items-center gap-1.5 cursor-pointer shadow-sm"
                     >
                       {isExecutingPlayground ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -885,7 +885,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
               </div>
             ) : (
               /* Formatted Code Block */
-              <pre className="p-3 bg-[#232323] rounded-xl text-[#3ECF8E] font-mono text-xs border border-[#333333]/60 leading-relaxed whitespace-pre-wrap break-words overflow-x-hidden shadow-inner">
+              <pre className="p-3 bg-[#F8FAFC] rounded-xl text-[#0F172A] font-mono text-xs border border-[#E2E8F0] leading-relaxed whitespace-pre-wrap break-words overflow-x-hidden shadow-xs">
                 <code>{sqlQuery}</code>
               </pre>
             )}
@@ -895,16 +895,16 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
               <div>
                 <button
                   onClick={() => setShowExplanation(!showExplanation)}
-                  className="flex items-center gap-1 text-[11px] text-[#3ECF8E] hover:text-[#FFFFFF] font-medium transition-colors cursor-pointer"
+                  className="flex items-center gap-1 text-[11px] text-[#047857] hover:text-[#10B981] font-semibold transition-colors cursor-pointer"
                 >
-                  <HelpCircle className="w-3 h-3 text-[#3ECF8E]" />
+                  <HelpCircle className="w-3 h-3 text-[#10B981]" />
                   <span>Explain Query Logic</span>
                   {showExplanation ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                 </button>
 
                 {showExplanation && (
-                  <div className="mt-1.5 p-2.5 bg-[#232323]/90 border border-[#333333]/60 rounded-lg text-xs text-[#FFFFFF] leading-relaxed">
-                    💡 <span className="font-semibold text-[#3ECF8E]">Logic Breakdown:</span> {explanation}
+                  <div className="mt-1.5 p-2.5 bg-[#ECFDF5] border border-[#10B981]/30 rounded-lg text-xs text-[#047857] leading-relaxed font-medium">
+                    💡 <span className="font-semibold text-[#047857]">Logic Breakdown:</span> {explanation}
                   </div>
                 )}
               </div>

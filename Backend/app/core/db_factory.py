@@ -46,21 +46,52 @@ def get_db_connection(db_config: dict = None):
                 except Exception as first_err:
                     err_str = str(first_err)
                     # Smart Supabase IPv4 Pooler Auto-Fallback
-                    if "db." in url and ".supabase.co" in url:
-                        # Attempt pooler domain substitution if IPv6 direct host failed
-                        pooler_url = re.sub(r'db\.([a-z0-9]+)\.supabase\.co', r'aws-0-us-east-1.pooler.supabase.com', url)
-                        try:
-                            conn = psycopg2.connect(
-                                pooler_url,
-                                cursor_factory=RealDictCursor,
-                                connect_timeout=8
-                            )
-                            return conn, "postgres"
-                        except Exception:
-                            pass
+                    match = re.search(r'db\.([a-z0-9]+)\.supabase\.co', url)
+                    if match:
+                        ref = match.group(1)
+                        user_pass_match = re.search(r'postgresql://([^@]+)@', url)
+                        user_pass = user_pass_match.group(1) if user_pass_match else "postgres"
+                        if ":" in user_pass:
+                            u_name, p_word = user_pass.split(":", 1)
+                        else:
+                            u_name, p_word = user_pass, ""
 
-                    if "Name or service not known" in err_str or "could not translate host name" in err_str:
-                        err_str += " (Tip for Supabase: Direct db.ref.supabase.co requires IPv6. Please use Supabase Connection Pooler URL e.g. aws-0-us-east-1.pooler.supabase.com on port 6543 or 5432)."
+                        # URL unquote password if encoded (%40 -> @)
+                        from urllib.parse import unquote
+                        p_word = unquote(p_word)
+
+                        pooler_user = f"{u_name}.{ref}" if not u_name.endswith(f".{ref}") else u_name
+
+                        dbname_match = re.search(r':\d+/([^?]+)', url)
+                        dbname = dbname_match.group(1) if dbname_match else "postgres"
+
+                        regions = [
+                            "aws-0-us-east-1.pooler.supabase.com",
+                            "aws-0-ap-south-1.pooler.supabase.com",
+                            "aws-0-eu-central-1.pooler.supabase.com",
+                            "aws-0-us-west-1.pooler.supabase.com",
+                        ]
+                        ports = [6543, 5432]
+
+                        for reg in regions:
+                            for p_num in ports:
+                                try:
+                                    conn = psycopg2.connect(
+                                        host=reg,
+                                        port=p_num,
+                                        dbname=dbname,
+                                        user=pooler_user,
+                                        password=p_word,
+                                        sslmode="require",
+                                        cursor_factory=RealDictCursor,
+                                        connect_timeout=4
+                                    )
+                                    return conn, "postgres"
+                                except Exception:
+                                    continue
+
+                    if "Name or service not known" in err_str or "could not translate host name" in err_str or "Network is unreachable" in err_str:
+                        err_str += " (Tip for Supabase: Direct db.ref.supabase.co requires IPv6. Using pooler host aws-0-region.pooler.supabase.com on port 6543/5432)."
                     raise RuntimeError(f"Failed to connect using Connection URL: {err_str}")
 
         # Case B: Custom SQLite file path

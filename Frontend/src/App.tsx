@@ -377,12 +377,12 @@ const MainAppContent: React.FC<{
         </div>
 
         {/* Right Status Controls & User Profile */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Connected Database Pill / CTA */}
           <div className="flex items-center gap-1 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-1 shadow-xs">
             <button
               onClick={() => setIsDbModalOpen(true)}
-              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer font-semibold ${
+              className={`flex items-center gap-1 text-[11px] sm:text-xs px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer font-semibold ${
                 dbConfig
                   ? "bg-[#ECFDF5] text-[#047857] hover:bg-[#D1FAE5] border border-[#10B981]/30"
                   : "bg-[#ECFDF5] text-[#047857] hover:bg-[#D1FAE5] border border-[#10B981]/40 shadow-xs"
@@ -394,8 +394,8 @@ const MainAppContent: React.FC<{
               ) : (
                 <Database className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
               )}
-              <span className="max-w-[130px] sm:max-w-[210px] truncate">
-                {dbConfig ? getDbDisplayName() : "+ Connect Database"}
+              <span className="max-w-[75px] xs:max-w-[130px] sm:max-w-[210px] truncate">
+                {dbConfig ? getDbDisplayName() : "+ Connect DB"}
               </span>
             </button>
 
@@ -403,7 +403,7 @@ const MainAppContent: React.FC<{
               <button
                 onClick={disconnectDb}
                 title="Disconnect Custom DB & Reset to Demo"
-                className="text-[#047857] hover:text-rose-600 p-1 cursor-pointer transition-colors"
+                className="text-[#047857] hover:text-rose-600 p-0.5 sm:p-1 cursor-pointer transition-colors"
               >
                 <XCircle className="w-3.5 h-3.5" />
               </button>
@@ -413,15 +413,15 @@ const MainAppContent: React.FC<{
           {/* AST Active Security Pill */}
           <button
             onClick={() => setIsAuditLogModalOpen(true)}
-            className="flex items-center gap-1 text-xs text-[#047857] bg-[#ECFDF5] hover:bg-[#D1FAE5] px-2.5 py-1 rounded-xl border border-[#10B981]/30 font-medium cursor-pointer transition-all"
+            className="hidden sm:flex items-center gap-1 text-xs text-[#047857] bg-[#ECFDF5] hover:bg-[#D1FAE5] px-2.5 py-1 rounded-xl border border-[#10B981]/30 font-medium cursor-pointer transition-all"
             title="View System Observability & AST Security Policy"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
-            <span className="hidden sm:inline">AST Active</span>
+            <span>AST Active</span>
           </button>
 
-          {/* User Profile Dropdown */}
-          <div className="flex items-center gap-2 pl-2 border-l border-[#E2E8F0] shrink-0">
+          {/* User Profile Dropdown - ALWAYS VISIBLE */}
+          <div className="flex items-center gap-2 pl-1 sm:pl-2 border-l border-[#E2E8F0] shrink-0">
             <UserButton userContext={userContext} onSignOut={handleSignOut} />
           </div>
         </div>
@@ -635,11 +635,11 @@ const MainAppContent: React.FC<{
         {isSidebarOpen && (
           <div
             onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden fixed inset-0 bg-[#121212]/70 z-20 backdrop-blur-xs"
+            className="md:hidden fixed inset-0 bg-[#0F172A]/60 z-[90] backdrop-blur-xs transition-opacity"
           />
         )}
 
-        {/* Sidebar Container - Fully Responsive Overlay on Mobile, Fixed Collapsible on Desktop */}
+        {/* Sidebar Container - Fully Responsive Top-Level Drawer on Mobile (z-[100]) */}
         <AnimatePresence mode="wait">
           {isSidebarOpen && (
             <motion.aside
@@ -647,23 +647,24 @@ const MainAppContent: React.FC<{
               animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="h-full bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col shrink-0 overflow-hidden z-30 fixed md:relative left-0 top-0 bottom-0 shadow-lg md:shadow-none"
+              className="h-full bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col shrink-0 overflow-hidden z-[100] fixed md:relative left-0 top-0 bottom-0 shadow-2xl md:shadow-none w-72 max-w-[85vw]"
             >
               {/* Sidebar Header for Mobile */}
-              <div className="p-3 border-b border-[#E2E8F0] flex items-center justify-between">
+              <div className="p-3 border-b border-[#E2E8F0] flex items-center justify-between gap-2 bg-[#F8FAFC]">
                 <button
                   onClick={createNewSession}
-                  className="flex-1 py-2.5 px-4 bg-[#10B981] hover:bg-[#059669] text-[#FFFFFF] text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-[#10B981]/20"
+                  className="flex-1 py-2 px-3 bg-[#10B981] hover:bg-[#059669] text-[#FFFFFF] text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-[#10B981]/20 truncate"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>New Analytics Chat</span>
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <span className="truncate">New Analytics Chat</span>
                 </button>
 
                 <button
                   onClick={() => setIsSidebarOpen(false)}
-                  className="md:hidden p-2 text-[#047857] hover:text-[#0F172A] ml-2 cursor-pointer"
+                  className="md:hidden p-1.5 text-[#047857] hover:text-[#0F172A] hover:bg-[#E2E8F0] rounded-xl cursor-pointer shrink-0 transition-colors"
+                  title="Close Sidebar"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
@@ -740,6 +741,17 @@ const MainAppContent: React.FC<{
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Sidebar Footer with Mobile User Profile & Sign Out */}
+              <div className="p-3 border-t border-[#E2E8F0] bg-[#F8FAFC] flex items-center justify-between gap-2 shrink-0 md:hidden">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <UserButton userContext={userContext} onSignOut={handleSignOut} />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold text-[#0F172A] truncate">{userContext.userName}</span>
+                    <span className="text-[10px] text-[#64748B] truncate">{userContext.userEmail}</span>
+                  </div>
+                </div>
               </div>
             </motion.aside>
           )}
