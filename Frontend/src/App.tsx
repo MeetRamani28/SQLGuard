@@ -66,14 +66,6 @@ const QueryHistoryModal = lazy(() =>
   import("./components/QueryHistoryModal").then((m) => ({ default: m.QueryHistoryModal }))
 );
 
-const SAMPLE_QUESTIONS = [
-  "how many data vechana che",
-  "Show me total revenue and order count for each product category",
-  "ketla users che database ma?",
-  "સૌથી વધુ કમાણી કરતી કેટેગરી કઈ છે?",
-  "sabse jyada order dene wale top 3 customers kaun hain?",
-  "Which products are low in stock (less than 30 units)?",
-];
 
 const MainAppContent: React.FC<{
   userContext: { userId: string; userEmail: string; userName: string };
@@ -87,6 +79,8 @@ const MainAppContent: React.FC<{
     dbConfig,
     history,
     pinnedCards,
+    tableChips,
+    sampleQuestions,
     createNewSession,
     switchSession,
     renameSession,
@@ -802,7 +796,7 @@ const MainAppContent: React.FC<{
                       Multilingual Sample Queries to try out:
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-2xl mx-auto">
-                      {SAMPLE_QUESTIONS.map((q, idx) => (
+                      {sampleQuestions.map((q, idx) => (
                         <button
                           key={idx}
                           onClick={() => handleSampleClick(q)}
@@ -943,7 +937,7 @@ const MainAppContent: React.FC<{
                 <span className="font-semibold text-[#047857] flex items-center gap-1 text-[10px] uppercase tracking-wider">
                   <TableIcon className="w-3 h-3 text-[#10B981]" /> Table Chips:
                 </span>
-                {["customers", "orders", "revenue", "products", "categories", "region"].map((tbl) => (
+                {tableChips.map((tbl) => (
                   <button
                     key={tbl}
                     type="button"

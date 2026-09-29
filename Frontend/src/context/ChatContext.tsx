@@ -1,7 +1,68 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
-import type { ChatMessage, ChatSession, DbConfig, QueryResponseData, PinnedCardItem } from "../types";
-import { submitAnalyticsQuery, syncUserState, fetchUserSyncState, pingBackendKeepAlive } from "../services/api";
+import type { ChatMessage, ChatSession, DbConfig, QueryResponseData, PinnedCardItem, TableSchemaInfo } from "../types";
+import { submitAnalyticsQuery, syncUserState, fetchUserSyncState, pingBackendKeepAlive, fetchDatabaseSchema } from "../services/api";
 import { toast } from "sonner";
+
+const DEFAULT_TABLE_CHIPS = ["customers", "orders", "revenue", "products", "categories", "region"];
+
+const DEFAULT_SAMPLE_QUESTIONS = [
+  "how many data vechana che",
+  "Show me total revenue and order count for each product category",
+  "ketla users che database ma?",
+  "સૌથી વધુ કમાણી કરતી કેટેગરી કઈ છે?",
+  "sabse jyada order dene wale top 3 customers kaun hain?",
+  "Which products are low in stock (less than 30 units)?",
+];
+
+const generateDynamicSampleQueries = (tables: TableSchemaInfo[]): string[] => {
+  if (!tables || tables.length === 0) {
+    return DEFAULT_SAMPLE_QUESTIONS;
+  }
+
+  const queries: string[] = [];
+  const tableNames = tables.map((t) => t.table_name);
+
+  const t0 = tableNames[0];
+  const t1 = tableNames[1];
+  const t2 = tableNames[2];
+  const t3 = tableNames[3];
+
+  if (t0) {
+    queries.push(`Show top 10 records from ${t0} table`);
+    queries.push(`${t0} table ma total ketla records che?`);
+  }
+
+  if (t1) {
+    queries.push(`List all details from ${t1}`);
+    queries.push(`${t1} table me kitni total entries hain?`);
+  } else if (tables[0]?.columns?.length > 1) {
+    const colName = tables[0].columns[1].name;
+    queries.push(`Show ${colName} details from ${t0}`);
+    queries.push(`${t0} table me latest entries dikhao`);
+  }
+
+  if (t2) {
+    queries.push(`સૌથી વધુ વિગતો ${t2} ટેબલમાં કઈ છે?`);
+    queries.push(`Show summary count of all records in ${t2}`);
+  } else if (t0) {
+    queries.push(`Show recent 5 rows in ${t0} table`);
+    queries.push(`${t0} ma badha records ni summary aapo`);
+  }
+
+  if (t3) {
+    queries.push(`Show top 5 items from ${t3}`);
+  }
+
+  if (queries.length < 6 && t0) {
+    queries.push(`Which records in ${t0} have highest values?`);
+  }
+  if (queries.length < 6 && (t1 || t0)) {
+    const target = t1 || t0;
+    queries.push(`${target} table nu data count ketlu che?`);
+  }
+
+  return queries.slice(0, 6);
+};
 
 interface ChatContextType {
   sessions: ChatSession[];
@@ -12,6 +73,8 @@ interface ChatContextType {
   dbConfig: DbConfig | null;
   history: QueryResponseData[];
   pinnedCards: PinnedCardItem[];
+  tableChips: string[];
+  sampleQuestions: string[];
   userId: string;
   userEmail: string;
   userName: string;
@@ -88,6 +151,41 @@ export const ChatProvider: React.FC<{
   });
 
   const [loading, setLoading] = useState(false);
+  const [tableChips, setTableChips] = useState<string[]>(DEFAULT_TABLE_CHIPS);
+  const [sampleQuestions, setSampleQuestions] = useState<string[]>(DEFAULT_SAMPLE_QUESTIONS);
+
+  // Automatically fetch schema tables & generate dynamic sample questions whenever dbConfig changes
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!dbConfig || dbConfig.sqlite_path === "sqlguard_dev.db") {
+      setTableChips(DEFAULT_TABLE_CHIPS);
+      setSampleQuestions(DEFAULT_SAMPLE_QUESTIONS);
+      return;
+    }
+
+    fetchDatabaseSchema(dbConfig)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res.success && res.tables && res.tables.length > 0) {
+          const names = res.tables.map((t) => t.table_name);
+          setTableChips(names);
+          setSampleQuestions(generateDynamicSampleQueries(res.tables));
+        } else {
+          setTableChips(DEFAULT_TABLE_CHIPS);
+          setSampleQuestions(DEFAULT_SAMPLE_QUESTIONS);
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setTableChips(DEFAULT_TABLE_CHIPS);
+        setSampleQuestions(DEFAULT_SAMPLE_QUESTIONS);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [dbConfig]);
 
   // Sync state whenever user switches accounts
   useEffect(() => {
@@ -494,6 +592,8 @@ export const ChatProvider: React.FC<{
         dbConfig,
         history,
         pinnedCards,
+        tableChips,
+        sampleQuestions,
         userId,
         userEmail,
         userName,
