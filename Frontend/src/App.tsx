@@ -881,8 +881,30 @@ const MainAppContent: React.FC<{
           </div>
 
           {/* Ultra-Slick Bottom Input Bar - Sticky at bottom of viewport */}
-          <div className="sticky bottom-0 z-40 border-t border-[#E2E8F0] bg-[#FFFFFF] backdrop-blur-xl p-2 sm:p-4 shrink-0 shadow-lg pb-safe">
-            <div className="max-w-4xl mx-auto space-y-2.5">
+          <div className="sticky bottom-0 z-40 border-t border-[#E2E8F0] bg-[#FFFFFF] backdrop-blur-xl p-2 sm:p-3 shrink-0 shadow-lg pb-safe">
+            <div className="max-w-4xl mx-auto space-y-2">
+              {/* Quick Table Suggestion Chips - Placed ABOVE prompt form for mobile visibility */}
+              {tableChips && tableChips.length > 0 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap no-scrollbar py-0.5 px-0.5 text-[11px] text-[#047857]">
+                  <span className="font-semibold text-[#047857] flex items-center gap-1 text-[10px] uppercase tracking-wider shrink-0 bg-[#ECFDF5] px-2 py-0.5 rounded-md border border-[#10B981]/20">
+                    <TableIcon className="w-3 h-3 text-[#10B981]" /> Table Chips:
+                  </span>
+                  {tableChips.map((tbl) => (
+                    <button
+                      key={tbl}
+                      type="button"
+                      onClick={() => {
+                        const queryText = questionInput ? `${questionInput} ${tbl}` : `Show data from ${tbl}`;
+                        scrollToExistingOrSend(queryText);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#10B981] text-[#047857] hover:text-[#0F172A] font-mono text-[10px] cursor-pointer transition-all hover:bg-[#F1F5F9] shadow-xs shrink-0 active:scale-95"
+                    >
+                      +{tbl}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <form onSubmit={handleFormSubmit} className="relative">
                 <div className="flex items-center bg-[#F8FAFC] border border-[#CBD5E1] focus-within:border-[#10B981] focus-within:ring-2 focus-within:ring-[#10B981]/20 rounded-2xl p-1.5 sm:p-2 shadow-xs transition-all">
                   <div className="flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-[#FFFFFF] rounded-xl border border-[#E2E8F0] text-[#047857] text-xs font-semibold shrink-0">
@@ -895,7 +917,7 @@ const MainAppContent: React.FC<{
                     value={questionInput}
                     onChange={(e) => setQuestionInput(e.target.value)}
                     placeholder="Ask in English, Gujarati (ગુજરાતી), or Hindi (हिंदी)..."
-                    className="w-full bg-transparent border-none px-2 sm:px-4 py-2 text-xs sm:text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none"
+                    className="w-full bg-transparent border-none px-2 sm:px-4 py-2 text-xs sm:text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none min-w-0"
                   />
 
                   <button
@@ -931,26 +953,6 @@ const MainAppContent: React.FC<{
                   </button>
                 </div>
               </form>
-
-              {/* Quick Table Suggestion Chips */}
-              <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-[#047857]">
-                <span className="font-semibold text-[#047857] flex items-center gap-1 text-[10px] uppercase tracking-wider">
-                  <TableIcon className="w-3 h-3 text-[#10B981]" /> Table Chips:
-                </span>
-                {tableChips.map((tbl) => (
-                  <button
-                    key={tbl}
-                    type="button"
-                    onClick={() => {
-                      const queryText = questionInput ? `${questionInput} ${tbl}` : `Show data from ${tbl}`;
-                      scrollToExistingOrSend(queryText);
-                    }}
-                    className="px-2.5 py-0.5 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#10B981] text-[#047857] hover:text-[#0F172A] font-mono text-[10px] cursor-pointer transition-all hover:bg-[#F1F5F9] shadow-xs"
-                  >
-                    +{tbl}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         </main>

@@ -1013,14 +1013,15 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
           ) : (
             <div className="w-full space-y-3">
               {/* Dynamic Chart & Palette Control Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 bg-[#F8FAFC] p-2 rounded-xl border border-[#E2E8F0] text-xs">
-                <div className="flex items-center space-x-1">
-                  <span className="text-[11px] text-[#047857] font-semibold mr-1">View:</span>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-[#F8FAFC] p-2 sm:p-2.5 rounded-xl border border-[#E2E8F0] text-xs max-w-full overflow-hidden">
+                {/* View Mode Buttons */}
+                <div className="flex items-center gap-1 overflow-x-auto max-w-full pb-0.5 sm:pb-0 no-scrollbar shrink-0">
+                  <span className="text-[11px] text-[#047857] font-semibold mr-1 shrink-0">View:</span>
                   {(["bar", "line", "pie", "table"] as const).map((type) => (
                     <button
                       key={type}
                       onClick={() => setActiveChartType(type)}
-                      className={`px-2.5 py-1 rounded-lg font-semibold uppercase text-[10px] transition-colors ${
+                      className={`px-2.5 py-1 rounded-lg font-semibold uppercase text-[10px] transition-colors shrink-0 ${
                         activeChartType === type
                           ? "bg-[#10B981] text-white shadow-xs"
                           : "text-[#047857] hover:text-[#0F172A] hover:bg-[#E2E8F0]"
@@ -1031,14 +1032,15 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                   ))}
                 </div>
 
-                <div className="flex items-center space-x-3">
+                {/* Metric & Palette Selection Dropdowns */}
+                <div className="flex flex-wrap items-center gap-2 max-w-full justify-between sm:justify-end">
                   {numericKeys.length > 1 && (
-                    <div className="flex items-center space-x-1.5">
-                      <span className="text-[11px] text-[#047857] font-semibold">Metric:</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[11px] text-[#047857] font-semibold shrink-0">Metric:</span>
                       <select
                         value={selectedMetric}
                         onChange={(e) => setSelectedMetric(e.target.value)}
-                        className="bg-[#FFFFFF] text-xs text-[#047857] rounded border border-[#E2E8F0] px-2 py-0.5 focus:outline-none"
+                        className="bg-[#FFFFFF] text-xs text-[#047857] rounded border border-[#E2E8F0] px-2 py-1 focus:outline-none max-w-[130px] sm:max-w-[160px] truncate"
                       >
                         <option value="">{activeChartType === "pie" ? "Primary Metric" : "All Metrics"}</option>
                         {numericKeys.map((k) => (
@@ -1050,12 +1052,12 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                     </div>
                   )}
 
-                  <div className="flex items-center space-x-1.5">
-                    <span className="text-[11px] text-[#047857] font-semibold">Palette:</span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[11px] text-[#047857] font-semibold shrink-0">Palette:</span>
                     <select
                       value={activePalette}
                       onChange={(e) => setActivePalette(e.target.value as any)}
-                      className="bg-[#FFFFFF] text-xs text-[#047857] rounded border border-[#E2E8F0] px-2 py-0.5 focus:outline-none"
+                      className="bg-[#FFFFFF] text-xs text-[#047857] rounded border border-[#E2E8F0] px-2 py-1 focus:outline-none max-w-[130px] sm:max-w-[160px] truncate"
                     >
                       <option value="cyan">Oceanic Cyan</option>
                       <option value="emerald">Emerald Matrix</option>
