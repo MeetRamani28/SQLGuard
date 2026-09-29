@@ -3,8 +3,8 @@ from app.core.db_factory import get_db_connection as factory_get_db_connection
 
 def get_database_schema(db_config: dict = None) -> str:
     """
-    Description: Introspects connected database (SQLite or PostgreSQL) dynamically.
-    Usecase: Extracts table structure, column types, and foreign key relations for LLM context.
+    Description: Introspects connected database (SQLite, PostgreSQL, MySQL, or MongoDB) dynamically.
+    Usecase: Extracts table/collection structure, column/field types, and foreign key relations for LLM context.
     """
     conn, dialect = factory_get_db_connection(db_config)
     cursor = conn.cursor()
@@ -35,6 +35,87 @@ def get_database_schema(db_config: dict = None) -> str:
 
         if fk_list:
             schema_str += "\nFOREIGN KEY RELATIONSHIPS:\n" + "\n".join(fk_list) + "\n"
+
+        return schema_str
+
+    elif dialect == "mongodb":
+        db = conn.db
+        collections = db.list_collection_names()
+        tables_dict = {}
+
+        for col_name in collections:
+            if col_name.startswith("system."):
+                continue
+            sample_docs = list(db[col_name].find({}).limit(10))
+            fields = {}
+            for doc in sample_docs:
+                for k, v in doc.items():
+                    if k not in fields:
+                        v_type = type(v).__name__
+                        if v_type == "ObjectId":
+                            v_type = "string"
+                        elif v_type == "dict":
+                            v_type = "object"
+                        elif v_type == "list":
+                            v_type = "array"
+                        fields[k] = v_type
+            cols_str_list = [f"{k} ({v_type})" for k, v_type in fields.items()]
+            tables_dict[col_name] = cols_str_list
+
+        conn.close()
+
+        schema_str = "DATABASE SCHEMA:\n"
+        for table_name, cols in tables_dict.items():
+            schema_str += f"- Table '{table_name}': " + ", ".join(cols) + "\n"
+
+        return schema_str
+
+    elif dialect == "mysql":
+        columns_query = """
+        SELECT 
+            TABLE_NAME as table_name, 
+            COLUMN_NAME as column_name, 
+            DATA_TYPE as data_type 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        ORDER BY TABLE_NAME, ORDINAL_POSITION;
+        """
+        fk_query = """
+        SELECT
+            TABLE_NAME as foreign_table,
+            COLUMN_NAME as foreign_column,
+            REFERENCED_TABLE_NAME as primary_table,
+            REFERENCED_COLUMN_NAME as primary_column
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND REFERENCED_TABLE_NAME IS NOT NULL;
+        """
+
+        cursor.execute(columns_query)
+        columns_data = cursor.fetchall()
+
+        cursor.execute(fk_query)
+        fk_data = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        tables_dict = {}
+        for row in columns_data:
+            t_name = row['table_name']
+            c_info = f"{row['column_name']} ({row['data_type']})"
+            if t_name not in tables_dict:
+                tables_dict[t_name] = []
+            tables_dict[t_name].append(c_info)
+
+        schema_str = "DATABASE SCHEMA:\n"
+        for table_name, cols in tables_dict.items():
+            schema_str += f"- Table '{table_name}': " + ", ".join(cols) + "\n"
+
+        if fk_data:
+            schema_str += "\nFOREIGN KEY RELATIONSHIPS:\n"
+            for fk in fk_data:
+                schema_str += f"- {fk['foreign_table']}.{fk['foreign_column']} references {fk['primary_table']}.{fk['primary_column']}\n"
 
         return schema_str
 

@@ -114,7 +114,8 @@ def validate_sql_node(state: AgentState) -> dict:
 
     db_config = state.get("db_config")
     _, dialect = factory_get_db_connection(db_config)
-    is_valid, result = validate_read_only_sql(sql, dialect=dialect)
+    read_dialect = "mysql" if dialect in ("mysql", "mongodb") else dialect
+    is_valid, result = validate_read_only_sql(sql, dialect=read_dialect)
     
     if is_valid:
         return {
