@@ -118,6 +118,20 @@ const MainAppContent: React.FC<{
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
 
+  const isAnyModalOpen =
+    isDbModalOpen ||
+    isSchemaModalOpen ||
+    isDashboardModalOpen ||
+    isAuditLogModalOpen ||
+    isSavedQueriesModalOpen ||
+    isErDiagramModalOpen ||
+    isSystemHealthModalOpen ||
+    isScheduleModalOpen ||
+    isCommandPaletteOpen ||
+    isQueryHistoryModalOpen ||
+    isCompareModalOpen ||
+    isKeyboardModalOpen;
+
   const handleCommandSelect = (actionId: string) => {
     switch (actionId) {
       case "toggle-command-palette":
@@ -345,7 +359,9 @@ const MainAppContent: React.FC<{
       <Toaster position="top-right" theme="light" richColors />
 
       {/* Primary Top Header Navigation (Fixed Height h-14) */}
-      <header className="h-14 border-b border-[#E2E8F0] bg-[#FFFFFF] z-40 shrink-0 px-3 sm:px-4 flex items-center justify-between shadow-xs">
+      <header className={`h-14 border-b border-[#E2E8F0] bg-[#FFFFFF] z-40 shrink-0 px-3 sm:px-4 flex items-center justify-between shadow-xs transition-all duration-300 ${
+        isAnyModalOpen ? "filter blur-xs opacity-50 pointer-events-none" : "filter-none opacity-100"
+      }`}>
         {/* Left Branding & Sidebar Toggle */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
@@ -428,7 +444,9 @@ const MainAppContent: React.FC<{
       </header>
 
       {/* Secondary Tools Navigation Sub-Bar (Fixed Height h-11) */}
-      <nav className="h-11 border-b border-[#E2E8F0] bg-[#FFFFFF] backdrop-blur-md z-30 shrink-0 px-3 flex items-center justify-between overflow-x-auto custom-scrollbar shadow-xs gap-2">
+      <nav className={`h-11 border-b border-[#E2E8F0] bg-[#FFFFFF] backdrop-blur-md z-30 shrink-0 px-3 flex items-center justify-between overflow-x-auto custom-scrollbar shadow-xs gap-2 transition-all duration-300 ${
+        isAnyModalOpen ? "filter blur-xs opacity-50 pointer-events-none" : "filter-none opacity-100"
+      }`}>
         <div className="flex items-center gap-1.5 shrink-0 min-w-max">
           {/* Query History Popup Button */}
           <button
@@ -647,7 +665,9 @@ const MainAppContent: React.FC<{
               animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="h-full bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col shrink-0 overflow-hidden z-[100] md:z-10 fixed md:relative left-0 top-0 bottom-0 shadow-2xl md:shadow-none w-72 max-w-[85vw]"
+              className={`h-full bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col shrink-0 overflow-hidden z-[100] md:z-10 fixed md:relative left-0 top-0 bottom-0 shadow-2xl md:shadow-none w-72 max-w-[85vw] transition-all duration-300 ${
+                isAnyModalOpen ? "filter blur-sm opacity-40 pointer-events-none" : "filter-none opacity-100"
+              }`}
             >
               {/* Sidebar Header for Mobile */}
               <div className="p-3 border-b border-[#E2E8F0] flex items-center justify-between gap-2 bg-[#F8FAFC]">
