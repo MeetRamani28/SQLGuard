@@ -101,7 +101,9 @@ const MainAppContent: React.FC<{
   } = useChat();
 
   const [questionInput, setQuestionInput] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [isSchemaModalOpen, setIsSchemaModalOpen] = useState(false);
   const [isDashboardModalOpen, setIsDashboardModalOpen] = useState(false);
@@ -355,11 +357,11 @@ const MainAppContent: React.FC<{
   };
 
   return (
-    <div className="h-screen w-full max-w-full flex flex-col overflow-hidden bg-[#F8FAFC] text-[#0F172A] font-sans selection:bg-[#10B981]/20 selection:text-[#0F172A]">
+    <div className="h-screen h-[100dvh] w-full max-w-full flex flex-col overflow-hidden fixed inset-0 bg-[#F8FAFC] text-[#0F172A] font-sans selection:bg-[#10B981]/20 selection:text-[#0F172A]">
       <Toaster position="top-right" theme="light" richColors />
 
       {/* Primary Top Header Navigation (Fixed Height h-14) */}
-      <header className={`h-14 border-b border-[#E2E8F0] bg-[#FFFFFF] z-40 shrink-0 px-3 sm:px-4 flex items-center justify-between shadow-xs transition-all duration-300 ${
+      <header className={`sticky top-0 h-14 border-b border-[#E2E8F0] bg-[#FFFFFF] z-40 shrink-0 px-3 sm:px-4 flex items-center justify-between shadow-xs transition-all duration-300 ${
         isAnyModalOpen ? "filter blur-xs opacity-50 pointer-events-none" : "filter-none opacity-100"
       }`}>
         {/* Left Branding & Sidebar Toggle */}
@@ -444,7 +446,7 @@ const MainAppContent: React.FC<{
       </header>
 
       {/* Secondary Tools Navigation Sub-Bar (Fixed Height h-11) */}
-      <nav className={`h-11 border-b border-[#E2E8F0] bg-[#FFFFFF] backdrop-blur-md z-30 shrink-0 px-3 flex items-center justify-between overflow-x-auto custom-scrollbar shadow-xs gap-2 transition-all duration-300 ${
+      <nav className={`sticky top-14 h-11 border-b border-[#E2E8F0] bg-[#FFFFFF] backdrop-blur-md z-30 shrink-0 px-3 flex items-center justify-between overflow-x-auto custom-scrollbar shadow-xs gap-2 transition-all duration-300 ${
         isAnyModalOpen ? "filter blur-xs opacity-50 pointer-events-none" : "filter-none opacity-100"
       }`}>
         <div className="flex items-center gap-1.5 shrink-0 min-w-max">
@@ -526,38 +528,38 @@ const MainAppContent: React.FC<{
 
       {/* LIVE DASHBOARD MODAL */}
       {isDashboardModalOpen && (
-        <div className="fixed inset-0 z-[200] bg-[#121212]/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
-          <div className="bg-[#333333] border border-[#3ECF8E]/60 w-full max-w-6xl h-[88vh] rounded-2xl p-4 sm:p-6 shadow-2xl flex flex-col space-y-4 text-[#FFFFFF]">
-            <div className="flex items-center justify-between border-b border-[#3ECF8E]/50 pb-3">
-              <div className="flex items-center gap-2 text-[#3ECF8E] font-bold text-base">
-                <LayoutGrid className="w-5 h-5 text-[#3ECF8E]" />
-                <span className="text-[#FFFFFF] font-bold">Live Pinned Analytics Dashboard</span>
-                <span className="text-xs bg-[#3ECF8E]/30 border border-[#3ECF8E]/50 px-2.5 py-0.5 rounded-full text-emerald-200 font-semibold">
+        <div className="fixed inset-0 z-[200] bg-[#0F172A]/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-[#FFFFFF] border border-[#E2E8F0] w-full max-w-6xl h-[88vh] rounded-2xl p-4 sm:p-6 shadow-2xl flex flex-col space-y-4 text-[#0F172A]">
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+              <div className="flex items-center gap-2 text-[#047857] font-bold text-base">
+                <LayoutGrid className="w-5 h-5 text-[#10B981]" />
+                <span className="text-[#0F172A] font-bold text-base sm:text-lg">Live Pinned Analytics Dashboard</span>
+                <span className="text-xs bg-[#ECFDF5] border border-[#10B981]/30 px-2.5 py-0.5 rounded-full text-[#047857] font-semibold">
                   {pinnedCards.length} Pinned Metrics
                 </span>
               </div>
               <button
                 onClick={() => setIsDashboardModalOpen(false)}
-                className="text-[#3ECF8E] hover:text-white cursor-pointer p-1 rounded-lg hover:bg-[#2C2C2C] transition-colors"
+                className="text-[#64748B] hover:text-[#0F172A] cursor-pointer p-1 rounded-lg hover:bg-[#F1F5F9] transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar bg-[#F8FAFC] p-4 rounded-xl border border-[#E2E8F0]">
               {pinnedCards.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center space-y-3 text-[#3ECF8E] py-12">
-                  <Pin className="w-10 h-10 text-[#3ECF8E] opacity-50" />
-                  <p className="text-xs sm:text-sm font-medium">No pinned analytics cards yet.</p>
-                  <p className="text-[11px] text-[#71717A]">Click "Pin" on any query result card to build your executive dashboard.</p>
+                <div className="h-full flex flex-col items-center justify-center space-y-3 text-[#047857] py-12">
+                  <Pin className="w-10 h-10 text-[#10B981] opacity-70" />
+                  <p className="text-xs sm:text-sm font-bold text-[#0F172A]">No pinned analytics cards yet.</p>
+                  <p className="text-[11px] text-[#64748B]">Click "Pin" on any query result card to build your executive dashboard.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                   {pinnedCards.map((pinned) => (
-                    <div key={pinned.id} className="relative group border border-[#3ECF8E]/40 rounded-2xl overflow-hidden bg-[#232323]/90 shadow-xl">
+                    <div key={pinned.id} className="relative group border border-[#E2E8F0] rounded-2xl overflow-hidden bg-[#FFFFFF] shadow-sm hover:shadow-md transition-all">
                       <button
                         onClick={() => unpinCard(pinned.id)}
-                        className="absolute right-3 top-3 z-20 px-2.5 py-1 bg-rose-950/90 text-rose-300 hover:bg-rose-900 rounded-lg border border-rose-800/60 text-[10px] font-semibold cursor-pointer transition-colors shadow-md"
+                        className="absolute right-3 top-3 z-20 px-2.5 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg border border-rose-200 text-[10px] font-semibold cursor-pointer transition-colors shadow-2xs"
                         title="Unpin Card"
                       >
                         Unpin Metric
@@ -574,46 +576,46 @@ const MainAppContent: React.FC<{
 
       {/* AST SECURITY AUDIT LOG MODAL */}
       {isAuditLogModalOpen && (
-        <div className="fixed inset-0 z-[200] bg-[#121212]/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#232323] border border-[#333333] w-full max-w-xl rounded-2xl p-6 shadow-2xl space-y-4 text-xs text-[#FFFFFF]">
-            <div className="flex items-center justify-between border-b border-[#333333]/60 pb-3">
-              <div className="flex items-center gap-2 text-[#3ECF8E] font-bold text-base">
-                <ShieldCheck className="w-5 h-5 text-[#3ECF8E]" />
+        <div className="fixed inset-0 z-[200] bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#FFFFFF] border border-[#E2E8F0] w-full max-w-xl rounded-2xl p-6 shadow-2xl space-y-4 text-xs text-[#0F172A]">
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+              <div className="flex items-center gap-2 text-[#047857] font-bold text-base">
+                <ShieldCheck className="w-5 h-5 text-[#10B981]" />
                 <span>AST Security Guard & System Audit Policy</span>
               </div>
               <button
                 onClick={() => setIsAuditLogModalOpen(false)}
-                className="text-[#3ECF8E] hover:text-white cursor-pointer"
+                className="text-[#64748B] hover:text-[#0F172A] cursor-pointer p-1 rounded-lg hover:bg-[#F1F5F9]"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3">
-              <div className="p-3 bg-[#121212] rounded-xl border border-[#333333]/60 space-y-1.5">
+              <div className="p-3 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] space-y-1.5 font-medium">
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#3ECF8E] font-semibold">AST Guard Mode</span>
-                  <span className="text-[#3ECF8E] font-mono font-bold">Strict Read-Only SELECT</span>
+                  <span className="text-[#64748B]">AST Guard Mode</span>
+                  <span className="text-[#047857] font-mono font-bold">Strict Read-Only SELECT</span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#3ECF8E] font-semibold">PII Data Masking</span>
-                  <span className="text-[#3ECF8E] font-mono font-bold">ACTIVE (SSN, Passwords, Credit Cards)</span>
+                  <span className="text-[#64748B]">PII Data Masking</span>
+                  <span className="text-[#047857] font-mono font-bold">ACTIVE (SSN, Passwords, Credit Cards)</span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#3ECF8E] font-semibold">Schema Vector RAG</span>
-                  <span className="text-[#3ECF8E] font-mono font-bold">ChromaDB / Pinecone Hybrid</span>
+                  <span className="text-[#64748B]">Schema Vector RAG</span>
+                  <span className="text-[#047857] font-mono font-bold">ChromaDB / Pinecone Hybrid</span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#3ECF8E] font-semibold">LangGraph Self-Correction</span>
-                  <span className="text-amber-400 font-mono font-bold">Max 3 Heals / Query</span>
+                  <span className="text-[#64748B]">LangGraph Self-Correction</span>
+                  <span className="text-amber-700 font-mono font-bold">Max 3 Heals / Query</span>
                 </div>
               </div>
 
-              <div className="p-3 bg-[#3ECF8E]/15 border border-[#3ECF8E]/30 rounded-xl space-y-1 text-[11px] text-emerald-200">
-                <p className="font-bold flex items-center gap-1 text-[#3ECF8E]">
-                  <Activity className="w-3.5 h-3.5" /> Enforced Security Rules:
+              <div className="p-3 bg-[#ECFDF5] border border-[#10B981]/30 rounded-xl space-y-1 text-[11px] text-[#047857]">
+                <p className="font-bold flex items-center gap-1 text-[#047857]">
+                  <Activity className="w-3.5 h-3.5 text-[#10B981]" /> Enforced Security Rules:
                 </p>
-                <ul className="list-disc list-inside space-y-0.5 text-[#3ECF8E]">
+                <ul className="list-disc list-inside space-y-0.5 text-[#047857] font-medium">
                   <li>Destructive SQL commands (DROP, DELETE, INSERT, UPDATE, ALTER) hard-stopped before execution.</li>
                   <li>Multi-statement SQL injections automatically rejected.</li>
                   <li>Max row result cap enforced at 1000 rows.</li>
@@ -905,14 +907,14 @@ const MainAppContent: React.FC<{
                     type="text"
                     value={questionInput}
                     onChange={(e) => setQuestionInput(e.target.value)}
-                    placeholder="Ask any question in English, Gujarati (ગુજરાતી), or Hindi (हिंदी)..."
-                    className="w-full bg-transparent border-none px-3 sm:px-4 py-2 text-xs sm:text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none"
+                    placeholder="Ask in English, Gujarati (ગુજરાતી), or Hindi (हिंदी)..."
+                    className="w-full bg-transparent border-none px-2 sm:px-4 py-2 text-xs sm:text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none"
                   />
 
                   <button
                     type="button"
                     onClick={handleVoiceInput}
-                    className={`p-2 rounded-xl text-xs transition-colors shrink-0 ${
+                    className={`p-1.5 sm:p-2 rounded-xl text-xs transition-colors shrink-0 ${
                       isListeningVoice
                         ? "bg-rose-600 text-white animate-pulse shadow-lg shadow-rose-500/50"
                         : "text-[#047857] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
@@ -925,7 +927,7 @@ const MainAppContent: React.FC<{
                   <button
                     type="submit"
                     disabled={loading || !questionInput.trim()}
-                    className="bg-[#10B981] hover:bg-[#059669] disabled:bg-[#E2E8F0] disabled:text-[#94A3B8] text-white font-bold px-4 sm:px-6 py-2.5 rounded-xl flex items-center gap-2 text-xs transition-all cursor-pointer shrink-0 shadow-md shadow-[#10B981]/20 border border-[#10B981]/30 active:scale-95"
+                    className="bg-[#10B981] hover:bg-[#059669] disabled:bg-[#E2E8F0] disabled:text-[#94A3B8] text-white font-bold px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl flex items-center gap-1.5 text-xs transition-all cursor-pointer shrink-0 shadow-md shadow-[#10B981]/20 border border-[#10B981]/30 active:scale-95"
                   >
                     {loading ? (
                       <>
@@ -935,7 +937,8 @@ const MainAppContent: React.FC<{
                     ) : (
                       <>
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>Execute Query</span>
+                        <span className="hidden sm:inline">Execute Query</span>
+                        <span className="sm:hidden font-semibold">Run</span>
                       </>
                     )}
                   </button>

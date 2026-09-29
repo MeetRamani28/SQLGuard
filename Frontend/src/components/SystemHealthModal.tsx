@@ -48,12 +48,12 @@ export const SystemHealthModal: React.FC<SystemHealthModalProps> = ({ isOpen, on
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0F172A]/40 p-4 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0F172A]/40 p-2 sm:p-4 backdrop-blur-sm">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative flex h-[80vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-2xl text-[#0F172A]"
+          className="relative flex h-[88vh] sm:h-[82vh] max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-2xl text-[#0F172A]"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[#E2E8F0] bg-[#F8FAFC] px-6 py-4">

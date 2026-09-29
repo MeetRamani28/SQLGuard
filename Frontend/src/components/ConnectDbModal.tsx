@@ -165,23 +165,23 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#FFFFFF] border border-[#E2E8F0] w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-5 text-[#0F172A]">
+    <div className="fixed inset-0 z-[200] bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-[#FFFFFF] border border-[#E2E8F0] w-full max-w-lg max-h-[92vh] overflow-y-auto custom-scrollbar rounded-2xl p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 text-[#0F172A]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">
-          <div className="flex items-center gap-2 text-[#047857] font-semibold text-base">
-            <Database className="w-5 h-5 text-[#10B981]" />
-            <span>Database Connection Manager</span>
+        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3 sm:pb-4 gap-2">
+          <div className="flex items-center gap-2 text-[#047857] font-semibold text-sm sm:text-base min-w-0">
+            <Database className="w-5 h-5 text-[#10B981] shrink-0" />
+            <span className="truncate">Database Connection Manager</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={handleResetToDemo}
-              className="px-2.5 py-1 text-xs bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#047857] border border-[#10B981]/30 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+              className="px-2 sm:px-2.5 py-1 text-xs bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#047857] border border-[#10B981]/30 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
               title="Reset to built-in Demo E-Commerce DB"
             >
               <RotateCcw className="w-3 h-3 text-[#10B981]" />
-              <span>Use Demo DB</span>
+              <span className="hidden xs:inline">Use Demo DB</span>
             </button>
             <button
               onClick={onClose}
@@ -193,7 +193,7 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex bg-[#F8FAFC] p-1 rounded-xl border border-[#E2E8F0] text-xs">
+        <div className="flex overflow-x-auto custom-scrollbar bg-[#F8FAFC] p-1 rounded-xl border border-[#E2E8F0] text-xs gap-1">
           <button
             type="button"
             onClick={() => {

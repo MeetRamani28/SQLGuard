@@ -64,12 +64,12 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[200] flex items-start justify-center pt-20 bg-[#0F172A]/40 p-4 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0F172A]/40 p-2 sm:p-4 backdrop-blur-sm">
         <motion.div
           initial={{ opacity: 0, y: -20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
-          className="relative flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-2xl text-[#0F172A]"
+          className="relative flex w-full max-w-2xl max-h-[90vh] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-2xl text-[#0F172A]"
         >
           {/* Search Header */}
           <div className="flex items-center border-b border-[#E2E8F0] px-4 py-3.5 bg-[#F8FAFC]">

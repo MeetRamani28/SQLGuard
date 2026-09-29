@@ -616,7 +616,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
         {/* Header Badges & Actions Toolbar */}
         <div className="flex flex-wrap items-center gap-1.5 shrink-0 max-w-full">
-          {retryCount > 0 && (
+          {retryCount > 0 && !isForbidden && (
             <span className="flex items-center gap-1 text-[11px] text-[#D97706] bg-[#FEF3C7] px-2.5 py-1 rounded-lg border border-[#F59E0B]/30 font-mono">
               <RefreshCw className="w-3.5 h-3.5 text-[#D97706] animate-spin" /> {retryCount}x Retrying
             </span>

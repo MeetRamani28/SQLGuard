@@ -373,7 +373,7 @@ export const CustomUserProfileDropdown: React.FC<{
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute right-4 top-16 w-64 bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-4 shadow-2xl space-y-3 z-50 text-xs text-[#0F172A]"
+            className="absolute right-0 top-full mt-2 w-64 bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-4 shadow-2xl space-y-3 z-50 text-xs text-[#0F172A]"
           >
             <div className="flex items-center gap-3 border-b border-[#E2E8F0] pb-3">
               <div className="w-10 h-10 rounded-xl bg-[#10B981] text-[#FFFFFF] font-black text-sm flex items-center justify-center shadow-inner">
