@@ -639,13 +639,15 @@ async def save_user_sync_state(payload: UserSyncPayload):
     if not email:
         raise HTTPException(status_code=400, detail="User email required for cross-device sync.")
     
+    payload_dict = payload.model_dump(exclude_unset=True) if hasattr(payload, 'model_dump') else payload.dict(exclude_unset=True)
     current = USER_SYNC_STORE.get(email, {})
+    
     new_state = {
-        "db_config": payload.db_config if payload.db_config is not None else current.get("db_config"),
-        "sessions": payload.sessions if payload.sessions is not None else current.get("sessions"),
-        "active_session_id": payload.active_session_id if payload.active_session_id is not None else current.get("active_session_id"),
-        "history": payload.history if payload.history is not None else current.get("history"),
-        "pinned_cards": payload.pinned_cards if payload.pinned_cards is not None else current.get("pinned_cards"),
+        "db_config": payload_dict["db_config"] if "db_config" in payload_dict else current.get("db_config"),
+        "sessions": payload_dict["sessions"] if "sessions" in payload_dict else current.get("sessions"),
+        "active_session_id": payload_dict["active_session_id"] if "active_session_id" in payload_dict else current.get("active_session_id"),
+        "history": payload_dict["history"] if "history" in payload_dict else current.get("history"),
+        "pinned_cards": payload_dict["pinned_cards"] if "pinned_cards" in payload_dict else current.get("pinned_cards"),
         "updated_at": payload.updated_at or time.time()
     }
     USER_SYNC_STORE[email] = new_state

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, lazy, Suspense } from "react";
 import {
-  Database,
   Sparkles,
   AlertCircle,
   RefreshCw,
@@ -400,21 +399,26 @@ const MainAppContent: React.FC<{
           <div className="flex items-center gap-1 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-1 shadow-xs">
             <button
               onClick={() => setIsDbModalOpen(true)}
-              className={`flex items-center gap-1 text-[11px] sm:text-xs px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer font-semibold ${
+              className={`flex items-center gap-1.5 text-[11px] sm:text-xs px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer font-semibold ${
                 dbConfig
                   ? "bg-[#ECFDF5] text-[#047857] hover:bg-[#D1FAE5] border border-[#10B981]/30"
-                  : "bg-[#ECFDF5] text-[#047857] hover:bg-[#D1FAE5] border border-[#10B981]/40 shadow-xs"
+                  : "bg-[#F0FDF4] text-[#047857] hover:bg-[#DCFCE7] border border-[#10B981]/40 shadow-2xs"
               }`}
-              title={dbConfig ? "Connected Database (Click to Change)" : "Click to Connect PostgreSQL or Custom Database"}
+              title={
+                dbConfig
+                  ? "Connected Custom Database (Click to Change)"
+                  : "Built-in Demo E-Commerce Database Active (Click to Connect PostgreSQL or Custom DB)"
+              }
             >
-              {dbConfig ? (
-                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse shrink-0" />
-              ) : (
-                <Database className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
-              )}
-              <span className="max-w-[75px] xs:max-w-[130px] sm:max-w-[210px] truncate">
-                {dbConfig ? getDbDisplayName() : "+ Connect DB"}
+              <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse shrink-0" />
+              <span className="max-w-[100px] xs:max-w-[140px] sm:max-w-[210px] truncate">
+                {dbConfig ? getDbDisplayName() : "Demo DB (Active)"}
               </span>
+              {!dbConfig && (
+                <span className="ml-1 text-[9px] bg-[#10B981] text-white px-1.5 py-0.2 rounded font-bold uppercase tracking-wider hidden sm:inline-block">
+                  + Connect DB
+                </span>
+              )}
             </button>
 
             {dbConfig && (
@@ -730,7 +734,7 @@ const MainAppContent: React.FC<{
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         {isEditing ? (
                           <button
                             onClick={(e) => saveEditingSession(sess.id, e)}
@@ -763,17 +767,6 @@ const MainAppContent: React.FC<{
                     </div>
                   );
                 })}
-              </div>
-
-              {/* Sidebar Footer with Mobile User Profile & Sign Out */}
-              <div className="p-3 border-t border-[#E2E8F0] bg-[#F8FAFC] flex items-center justify-between gap-2 shrink-0 md:hidden">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <UserButton userContext={userContext} onSignOut={handleSignOut} />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold text-[#0F172A] truncate">{userContext.userName}</span>
-                    <span className="text-[10px] text-[#64748B] truncate">{userContext.userEmail}</span>
-                  </div>
-                </div>
               </div>
             </motion.aside>
           )}
