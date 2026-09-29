@@ -26,6 +26,7 @@ import {
   ChevronRight,
   Database,
   TrendingUp,
+  Sparkles,
   PieChart as PieChartIcon,
 } from "lucide-react";
 import jsPDF from "jspdf";
@@ -281,7 +282,7 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3">
         {explanation ? (
           <div className="p-3 bg-[#ECFDF5] rounded-xl text-xs text-[#047857] border border-[#10B981]/30 flex-1 leading-relaxed shadow-xs font-medium">
-            💡 <span className="font-bold text-[#047857]">Business Insight:</span>{" "}
+            <Sparkles className="w-3.5 h-3.5 text-[#10B981] inline mr-1" /> <span className="font-bold text-[#047857]">Business Insight:</span>{" "}
             {explanation}
           </div>
         ) : (

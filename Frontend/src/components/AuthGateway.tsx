@@ -173,8 +173,8 @@ const CustomAuthScreen: React.FC<CustomAuthScreenProps> = ({
           </div>
 
           <div className="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[10px] text-[#047857] font-mono">
-            <span>⚡ Latency: &lt;45ms</span>
-            <span>🛡️ Safety: 100% Read-Only</span>
+            <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-[#10B981]" /> Latency: &lt;45ms</span>
+            <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-[#10B981]" /> Safety: 100% Read-Only</span>
           </div>
         </div>
       </div>

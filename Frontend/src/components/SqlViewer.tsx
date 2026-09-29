@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   HelpCircle,
+  Sparkles,
   HelpCircle as QuestionIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -132,7 +133,7 @@ export const SqlViewer: React.FC<SqlViewerProps> = ({
 
               {showExplanation && (
                 <div className="mt-2 p-3 bg-[#ECFDF5] border border-[#10B981]/30 rounded-lg text-xs text-[#0F172A] leading-relaxed">
-                  💡 <span className="font-semibold text-[#047857]">Query Breakdown:</span>{" "}
+                  <Sparkles className="w-3.5 h-3.5 text-[#10B981] inline mr-1" /> <span className="font-semibold text-[#047857]">Query Breakdown:</span>{" "}
                   {explanation}
                 </div>
               )}

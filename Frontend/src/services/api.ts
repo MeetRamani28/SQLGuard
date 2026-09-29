@@ -357,6 +357,7 @@ export const syncUserState = async (payload: {
   active_session_id?: string;
   history?: any[];
   pinned_cards?: any[];
+  saved_presets?: any[];
   updated_at?: number;
 }): Promise<boolean> => {
   try {

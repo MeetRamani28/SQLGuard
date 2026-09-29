@@ -1067,7 +1067,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
               </div>
 
               {activeChartType === "bar" && (
-                <div className="h-64 sm:h-72 w-full pt-1 min-h-[260px]">
+                <div className="h-64 sm:h-72 w-full max-w-full overflow-x-hidden pt-1 min-h-[260px]">
                   <ResponsiveContainer width="100%" height={260}>
                     <BarChart data={sanitizedChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
@@ -1075,12 +1075,17 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                       <YAxis stroke="#475569" fontSize={11} />
                       <Tooltip
                         cursor={{ fill: "rgba(16, 185, 129, 0.08)" }}
+                        wrapperStyle={{ maxWidth: "80vw", zIndex: 100 }}
                         contentStyle={{
                           backgroundColor: "#FFFFFF",
                           borderColor: "#10B981",
                           color: "#0F172A",
                           borderRadius: "10px",
                           boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          maxWidth: "80vw",
+                          wordBreak: "break-all",
+                          whiteSpace: "normal",
+                          fontSize: "11px",
                         }}
                       />
                       <Legend />
@@ -1098,7 +1103,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
               )}
 
               {activeChartType === "line" && (
-                <div className="h-64 sm:h-72 w-full pt-1 min-h-[260px]">
+                <div className="h-64 sm:h-72 w-full max-w-full overflow-x-hidden pt-1 min-h-[260px]">
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={sanitizedChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
@@ -1106,12 +1111,17 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                       <YAxis stroke="#475569" fontSize={11} />
                       <Tooltip
                         cursor={{ stroke: "#10B981", strokeWidth: 1, strokeDasharray: "4 4" }}
+                        wrapperStyle={{ maxWidth: "80vw", zIndex: 100 }}
                         contentStyle={{
                           backgroundColor: "#FFFFFF",
                           borderColor: "#10B981",
                           color: "#0F172A",
                           borderRadius: "10px",
                           boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          maxWidth: "80vw",
+                          wordBreak: "break-all",
+                          whiteSpace: "normal",
+                          fontSize: "11px",
                         }}
                       />
                       <Legend />
@@ -1132,7 +1142,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
               {activeChartType === "pie" && (
                 hasValidPieMetrics ? (
-                  <div className="h-64 sm:h-72 w-full pt-1 min-h-[260px]">
+                  <div className="h-64 sm:h-72 w-full max-w-full overflow-x-hidden pt-1 min-h-[260px]">
                     <ResponsiveContainer width="100%" height={260}>
                       <PieChart>
                         <Tooltip
@@ -1140,12 +1150,17 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                             typeof value === "number" ? value.toLocaleString() : value,
                             name || activeMetricKey,
                           ]}
+                          wrapperStyle={{ maxWidth: "80vw", zIndex: 100 }}
                           contentStyle={{
                             backgroundColor: "#FFFFFF",
                             borderColor: "#10B981",
                             color: "#0F172A",
                             borderRadius: "10px",
                             boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                            maxWidth: "80vw",
+                            wordBreak: "break-all",
+                            whiteSpace: "normal",
+                            fontSize: "11px",
                           }}
                         />
                         <Legend />

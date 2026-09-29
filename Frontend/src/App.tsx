@@ -647,8 +647,8 @@ const MainAppContent: React.FC<{
         )}
       </Suspense>
 
-      {/* Main Body (Fixed Height calc(100vh - 6.25rem)) */}
-      <div className="flex-1 h-[calc(100vh-6.25rem)] flex overflow-hidden relative">
+      {/* Main Body (Fixed Height calc(100dvh - 5.5rem) on mobile, 100vh on desktop) */}
+      <div className="flex-1 h-[calc(100dvh-5.5rem)] md:h-[calc(100vh-6.25rem)] flex overflow-hidden relative max-w-full overflow-x-hidden">
         {/* Mobile Backdrop Overlay for small screens */}
         {isSidebarOpen && (
           <div
@@ -880,8 +880,8 @@ const MainAppContent: React.FC<{
             )}
           </div>
 
-          {/* Ultra-Slick Bottom Input Bar */}
-          <div className="border-t border-[#E2E8F0] bg-[#FFFFFF] backdrop-blur-xl p-3 sm:p-4 shrink-0 shadow-lg relative z-20">
+          {/* Ultra-Slick Bottom Input Bar - Sticky at bottom of viewport */}
+          <div className="sticky bottom-0 z-40 border-t border-[#E2E8F0] bg-[#FFFFFF] backdrop-blur-xl p-2 sm:p-4 shrink-0 shadow-lg pb-safe">
             <div className="max-w-4xl mx-auto space-y-2.5">
               <form onSubmit={handleFormSubmit} className="relative">
                 <div className="flex items-center bg-[#F8FAFC] border border-[#CBD5E1] focus-within:border-[#10B981] focus-within:ring-2 focus-within:ring-[#10B981]/20 rounded-2xl p-1.5 sm:p-2 shadow-xs transition-all">

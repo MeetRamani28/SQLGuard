@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { DbConfig, SavedDbPreset } from "../types";
 import { testDbConnection } from "../services/api";
+import { useChat } from "../context/ChatContext";
 import { toast } from "sonner";
 
 interface ConnectDbModalProps {
@@ -30,6 +31,8 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
   onSave,
   currentConfig,
 }) => {
+  const { savedPresets = [], saveDbPreset, deleteDbPreset } = useChat();
+
   const [activeTab, setActiveTab] = useState<"url" | "postgres" | "sqlite" | "presets">(
     currentConfig?.connection_url
       ? "url"
@@ -54,10 +57,6 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
   );
 
   const [presetNameInput, setPresetNameInput] = useState("");
-  const [savedPresets, setSavedPresets] = useState<SavedDbPreset[]>(() => {
-    const saved = localStorage.getItem("qs_saved_db_connections");
-    return saved ? JSON.parse(saved) : [];
-  });
 
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{
@@ -130,14 +129,18 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
       createdAt: new Date().toLocaleDateString(),
     };
 
-    setSavedPresets((prev) => [newPreset, ...prev]);
+    if (saveDbPreset) {
+      saveDbPreset(newPreset);
+    }
     setPresetNameInput("");
     toast.success(`Saved connection preset: "${name}"`);
   };
 
   const handleDeletePreset = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSavedPresets((prev) => prev.filter((p) => p.id !== id));
+    if (deleteDbPreset) {
+      deleteDbPreset(id);
+    }
     toast.info("Deleted database preset.");
   };
 

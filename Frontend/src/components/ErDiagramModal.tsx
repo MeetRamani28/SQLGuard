@@ -148,14 +148,17 @@ export const ErDiagramModal: React.FC<ErDiagramModalProps> = ({ isOpen, onClose 
 
             {/* Quick Stats Badges */}
             <div className="hidden lg:flex items-center space-x-2 text-xs font-mono font-semibold">
-              <span className="bg-[#FFFFFF] border border-[#E2E8F0] px-2.5 py-1 rounded-lg text-[#0F172A] shadow-2xs">
-                📊 <strong className="text-[#10B981]">{nodes.length}</strong> Tables
+              <span className="bg-[#FFFFFF] border border-[#E2E8F0] px-2.5 py-1 rounded-lg text-[#0F172A] shadow-2xs flex items-center gap-1">
+                <TableIcon className="w-3.5 h-3.5 text-[#10B981]" />
+                <strong className="text-[#10B981]">{nodes.length}</strong> Tables
               </span>
-              <span className="bg-[#FFFFFF] border border-[#E2E8F0] px-2.5 py-1 rounded-lg text-[#0F172A] shadow-2xs">
-                🔑 <strong className="text-[#0284C7]">{totalColumns}</strong> Fields
+              <span className="bg-[#FFFFFF] border border-[#E2E8F0] px-2.5 py-1 rounded-lg text-[#0F172A] shadow-2xs flex items-center gap-1">
+                <Key className="w-3.5 h-3.5 text-[#0284C7]" />
+                <strong className="text-[#0284C7]">{totalColumns}</strong> Fields
               </span>
-              <span className="bg-[#FFFFFF] border border-[#E2E8F0] px-2.5 py-1 rounded-lg text-[#0F172A] shadow-2xs">
-                🔗 <strong className="text-[#8B5CF6]">{edges.length}</strong> Foreign Keys
+              <span className="bg-[#FFFFFF] border border-[#E2E8F0] px-2.5 py-1 rounded-lg text-[#0F172A] shadow-2xs flex items-center gap-1">
+                <LinkIcon className="w-3.5 h-3.5 text-[#8B5CF6]" />
+                <strong className="text-[#8B5CF6]">{edges.length}</strong> Foreign Keys
               </span>
             </div>
 
@@ -164,11 +167,11 @@ export const ErDiagramModal: React.FC<ErDiagramModalProps> = ({ isOpen, onClose 
               <button
                 onClick={loadErData}
                 disabled={loading}
-                className="flex items-center space-x-1.5 rounded-lg border border-[#E2E8F0] bg-[#FFFFFF] px-3 py-1.5 text-xs text-[#047857] hover:bg-[#F1F5F9] font-medium shadow-2xs transition-colors cursor-pointer"
+                className="flex items-center space-x-1.5 rounded-lg border border-[#E2E8F0] bg-[#FFFFFF] px-3 py-1.5 text-xs text-[#047857] hover:bg-[#F1F5F9] font-medium shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
                 title="Refresh ER Diagram Schema"
               >
-                <RefreshCw className={`h-3.5 w-3.5 text-[#10B981] ${loading ? "animate-spin" : ""}`} />
-                <span className="hidden sm:inline">Refresh</span>
+                <RefreshCw className="h-3.5 w-3.5 text-[#10B981]" />
+                <span className="hidden sm:inline">{loading ? "Refreshing..." : "Refresh"}</span>
               </button>
               <button
                 onClick={onClose}

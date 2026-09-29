@@ -73,6 +73,7 @@ interface ChatContextType {
   dbConfig: DbConfig | null;
   history: QueryResponseData[];
   pinnedCards: PinnedCardItem[];
+  savedPresets: import("../types").SavedDbPreset[];
   tableChips: string[];
   sampleQuestions: string[];
   userId: string;
@@ -91,6 +92,8 @@ interface ChatContextType {
   clearHistory: () => void;
   pinCard: (item: QueryResponseData) => void;
   unpinCard: (id: string) => void;
+  saveDbPreset: (preset: import("../types").SavedDbPreset) => void;
+  deleteDbPreset: (id: string) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -147,6 +150,11 @@ export const ChatProvider: React.FC<{
 
   const [pinnedCards, setPinnedCards] = useState<PinnedCardItem[]>(() => {
     const saved = localStorage.getItem(`${storagePrefix}_pinned_cards`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [savedPresets, setSavedPresets] = useState<import("../types").SavedDbPreset[]>(() => {
+    const saved = localStorage.getItem(`${storagePrefix}_saved_presets`) || localStorage.getItem("qs_saved_db_connections");
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -219,6 +227,7 @@ export const ChatProvider: React.FC<{
     dbConfig?: DbConfig | null;
     history?: QueryResponseData[];
     pinnedCards?: PinnedCardItem[];
+    savedPresets?: import("../types").SavedDbPreset[];
   }) => {
     if (isSyncingFromRemote.current || !userEmail) return;
     const now = Date.now();
@@ -230,6 +239,7 @@ export const ChatProvider: React.FC<{
       active_session_id: updatedFields.activeSessionId !== undefined ? updatedFields.activeSessionId : activeSessionId,
       history: updatedFields.history !== undefined ? updatedFields.history : history,
       pinned_cards: updatedFields.pinnedCards !== undefined ? updatedFields.pinnedCards : pinnedCards,
+      saved_presets: updatedFields.savedPresets !== undefined ? updatedFields.savedPresets : savedPresets,
       updated_at: now,
     });
   };
@@ -265,6 +275,12 @@ export const ChatProvider: React.FC<{
     pushSyncToRemote({ pinnedCards });
   }, [pinnedCards, storagePrefix]);
 
+  useEffect(() => {
+    localStorage.setItem(`${storagePrefix}_saved_presets`, JSON.stringify(savedPresets));
+    localStorage.setItem("qs_saved_db_connections", JSON.stringify(savedPresets));
+    pushSyncToRemote({ savedPresets });
+  }, [savedPresets, storagePrefix]);
+
   // Real-time Background Polling Sync Loop across all logged-in devices
   useEffect(() => {
     if (!userEmail) return;
@@ -293,6 +309,11 @@ export const ChatProvider: React.FC<{
             }
             if (remote.pinned_cards && Array.isArray(remote.pinned_cards)) {
               setPinnedCards(remote.pinned_cards);
+            }
+            if (remote.saved_presets && Array.isArray(remote.saved_presets)) {
+              setSavedPresets(remote.saved_presets);
+              localStorage.setItem(`${storagePrefix}_saved_presets`, JSON.stringify(remote.saved_presets));
+              localStorage.setItem("qs_saved_db_connections", JSON.stringify(remote.saved_presets));
             }
 
             setTimeout(() => {
@@ -581,6 +602,27 @@ export const ChatProvider: React.FC<{
     toast.info("Query history cleared.");
   };
 
+  const saveDbPreset = (preset: import("../types").SavedDbPreset) => {
+    setSavedPresets((prev) => {
+      const filtered = prev.filter((p) => p.id !== preset.id && p.name !== preset.name);
+      const updated = [preset, ...filtered];
+      localStorage.setItem(`${storagePrefix}_saved_presets`, JSON.stringify(updated));
+      localStorage.setItem("qs_saved_db_connections", JSON.stringify(updated));
+      pushSyncToRemote({ savedPresets: updated });
+      return updated;
+    });
+  };
+
+  const deleteDbPreset = (id: string) => {
+    setSavedPresets((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      localStorage.setItem(`${storagePrefix}_saved_presets`, JSON.stringify(updated));
+      localStorage.setItem("qs_saved_db_connections", JSON.stringify(updated));
+      pushSyncToRemote({ savedPresets: updated });
+      return updated;
+    });
+  };
+
   return (
     <ChatContext.Provider
       value={{
@@ -592,6 +634,7 @@ export const ChatProvider: React.FC<{
         dbConfig,
         history,
         pinnedCards,
+        savedPresets,
         tableChips,
         sampleQuestions,
         userId,
@@ -610,6 +653,8 @@ export const ChatProvider: React.FC<{
         clearHistory,
         pinCard,
         unpinCard,
+        saveDbPreset,
+        deleteDbPreset,
       }}
     >
       {children}

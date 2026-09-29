@@ -660,12 +660,13 @@ class UserSyncPayload(BaseModel):
     active_session_id: Optional[str] = None
     history: Optional[List[Dict[str, Any]]] = None
     pinned_cards: Optional[List[Dict[str, Any]]] = None
+    saved_presets: Optional[List[Dict[str, Any]]] = None
     updated_at: Optional[float] = None
 
 @app.post("/api/v1/user-sync")
 async def save_user_sync_state(payload: UserSyncPayload):
     """
-    Description: Stores live workspace state (connected DB, chat sessions, query history) for cross-device real-time sync.
+    Description: Stores live workspace state (connected DB, chat sessions, query history, saved presets) for cross-device real-time sync.
     """
     email = payload.user_email.strip().lower()
     if not email:
@@ -680,6 +681,7 @@ async def save_user_sync_state(payload: UserSyncPayload):
         "active_session_id": payload_dict["active_session_id"] if "active_session_id" in payload_dict else current.get("active_session_id"),
         "history": payload_dict["history"] if "history" in payload_dict else current.get("history"),
         "pinned_cards": payload_dict["pinned_cards"] if "pinned_cards" in payload_dict else current.get("pinned_cards"),
+        "saved_presets": payload_dict["saved_presets"] if "saved_presets" in payload_dict else current.get("saved_presets"),
         "updated_at": payload.updated_at or time.time()
     }
     USER_SYNC_STORE[email] = new_state
