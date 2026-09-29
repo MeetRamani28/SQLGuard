@@ -49,7 +49,7 @@ export const ChatProvider: React.FC<{
   const userName = userContext?.userName || "Senior AI Engineer";
 
   const storagePrefix = `qs_user_${userId}`;
-  const lastSyncTimestamp = useRef<number>(Date.now());
+  const lastSyncTimestamp = useRef<number>(0); // Initialize at 0 to force initial pull from server on mount
   const isSyncingFromRemote = useRef<boolean>(false);
 
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
@@ -211,8 +211,8 @@ export const ChatProvider: React.FC<{
     checkRemoteSync();
     window.addEventListener("focus", checkRemoteSync);
 
-    // Poll every 2.5 seconds
-    const interval = setInterval(checkRemoteSync, 2500);
+    // Poll every 1.5 seconds for instant multi-device cross-device sync
+    const interval = setInterval(checkRemoteSync, 1500);
 
     return () => {
       clearInterval(interval);
