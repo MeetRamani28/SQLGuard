@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import sqlite3
 import json
 from urllib.parse import urlparse, unquote
@@ -231,25 +232,22 @@ def get_db_connection(db_config: dict = None):
                     dbname = dbname_match.group(1) if dbname_match else "postgres"
 
                     regions = [
-                        "aws-0-ap-northeast-2.pooler.supabase.com", # Seoul
-                        "aws-0-ap-southeast-1.pooler.supabase.com", # Singapore
-                        "aws-0-ap-south-1.pooler.supabase.com",     # Mumbai
                         "aws-0-us-east-1.pooler.supabase.com",     # N. Virginia
-                        "aws-0-us-east-2.pooler.supabase.com",     # Ohio
-                        "aws-0-us-west-1.pooler.supabase.com",     # N. California
-                        "aws-0-us-west-2.pooler.supabase.com",     # Oregon
+                        "aws-0-ap-south-1.pooler.supabase.com",     # Mumbai
                         "aws-0-eu-central-1.pooler.supabase.com",  # Frankfurt
+                        "aws-0-us-west-2.pooler.supabase.com",     # Oregon
+                        "aws-0-ap-southeast-1.pooler.supabase.com", # Singapore
                         "aws-0-eu-west-1.pooler.supabase.com",     # Ireland
-                        "aws-0-eu-west-2.pooler.supabase.com",     # London
-                        "aws-0-ap-southeast-2.pooler.supabase.com", # Sydney
-                        "aws-0-ap-northeast-1.pooler.supabase.com", # Tokyo
-                        "aws-0-sa-east-1.pooler.supabase.com",     # São Paulo
-                        "aws-0-ca-central-1.pooler.supabase.com",  # Canada
                     ]
-                    ports = [5432, 6543]
+                    ports = [6543, 5432]
 
+                    pooler_start = time.time()
                     for reg in regions:
+                        if time.time() - pooler_start > 5.0:
+                            break
                         for p_num in ports:
+                            if time.time() - pooler_start > 5.0:
+                                break
                             try:
                                 conn = psycopg2.connect(
                                     host=reg,
@@ -260,7 +258,7 @@ def get_db_connection(db_config: dict = None):
                                     sslmode="require",
                                     options=f"project={ref}",
                                     cursor_factory=RealDictCursor,
-                                    connect_timeout=2
+                                    connect_timeout=1
                                 )
                                 return conn, "postgres"
                             except Exception:

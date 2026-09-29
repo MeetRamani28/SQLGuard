@@ -20,41 +20,37 @@ from app.security.owasp_middleware import (
     get_owasp_top10_status,
 )
 
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="SQLGuard: Dual-Environment Autonomous Text-to-SQL Engine with LangGraph Self-Correction & AST Security",
     version="1.0.0"
 )
 
+# 1. CORS Middleware (Outermost middleware - handles all origins, preview URLs, Vercel & local environments)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_origin_regex=r"https?://.*",
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "DELETE", "PUT", "OPTIONS", "PATCH"],
+    allow_headers=["*"],
+)
+
+# 2. OWASP Top 10 Security Headers Middleware
 app.add_middleware(OWASPResponseHeadersMiddleware)
 
-if settings.APP_ENV == "production":
-    prod_origins = [
-        origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip()
-    ]
-    if settings.FRONTEND_URL and settings.FRONTEND_URL not in prod_origins:
-        prod_origins.append(settings.FRONTEND_URL)
-    
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=prod_origins if prod_origins else ["https://*.vercel.app"],
-        allow_origin_regex=r"https://.*\.vercel\.app",
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "DELETE", "PUT", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
-    )
-else:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "http://localhost:3000",
-            "http://localhost:8000"
-        ],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Description: Global exception handler preventing 502 Bad Gateway errors by capturing unhandled exceptions
+    and returning formatted JSON error responses with CORS headers.
+    """
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}"},
     )
 
 class DbConfigSchema(BaseModel):
