@@ -49,34 +49,38 @@ export const QueryHistoryModal: React.FC<QueryHistoryModalProps> = ({
           className="relative flex w-full max-w-2xl max-h-[90vh] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-2xl text-[#0F172A]"
         >
           {/* Search Header */}
-          <div className="flex items-center border-b border-[#E2E8F0] px-4 py-3.5 bg-[#F8FAFC]">
-            <Search className="h-5 w-5 text-[#10B981] mr-3 shrink-0" />
-            <input
-              type="text"
-              autoFocus
-              placeholder="Search query history & SQL logs... (Type to filter)"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-transparent text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none"
-            />
+          <div className="flex flex-wrap items-center justify-between border-b border-[#E2E8F0] px-3 sm:px-4 py-3 bg-[#F8FAFC] gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-[140px]">
+              <Search className="h-4 w-4 text-[#10B981] shrink-0" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Search history..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="w-full bg-transparent text-xs sm:text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none"
+              />
+            </div>
 
-            {history.length > 0 && (
+            <div className="flex items-center gap-2 shrink-0">
+              {history.length > 0 && (
+                <button
+                  onClick={onClearHistory}
+                  className="flex items-center gap-1 text-xs text-[#047857] hover:text-rose-600 px-2.5 py-1 rounded-lg bg-[#FFFFFF] hover:bg-rose-50 transition-colors cursor-pointer shrink-0 border border-[#E2E8F0] hover:border-rose-200 shadow-2xs font-semibold"
+                  title="Clear all query history"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Clear Log</span>
+                </button>
+              )}
+
               <button
-                onClick={onClearHistory}
-                className="mr-3 flex items-center gap-1 text-xs text-[#047857] hover:text-rose-600 px-2 py-1 rounded bg-[#FFFFFF] hover:bg-[#F1F5F9] transition-colors cursor-pointer shrink-0 border border-[#E2E8F0] shadow-xs font-medium"
-                title="Clear all query history"
+                onClick={onClose}
+                className="rounded-lg p-1 text-[#64748B] hover:bg-[#E2E8F0] hover:text-[#0F172A] transition-colors cursor-pointer shrink-0"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Clear Log</span>
+                <X className="h-5 w-5" />
               </button>
-            )}
-
-            <button
-              onClick={onClose}
-              className="rounded-lg p-1 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A] transition-colors cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            </div>
           </div>
 
           {/* History Item List */}

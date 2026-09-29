@@ -618,6 +618,50 @@ async def delete_scheduled_query_job(schedule_id: str):
     SCHEDULED_QUERIES_STORE = [s for s in SCHEDULED_QUERIES_STORE if s["id"] != schedule_id]
     return {"success": True, "message": f"Schedule '{schedule_id}' removed."}
 
+# Real-time Multi-Device User Workspace Synchronization Store
+USER_SYNC_STORE: Dict[str, Dict[str, Any]] = {}
+
+class UserSyncPayload(BaseModel):
+    user_email: str
+    db_config: Optional[Dict[str, Any]] = None
+    sessions: Optional[List[Dict[str, Any]]] = None
+    active_session_id: Optional[str] = None
+    history: Optional[List[Dict[str, Any]]] = None
+    pinned_cards: Optional[List[Dict[str, Any]]] = None
+    updated_at: Optional[float] = None
+
+@app.post("/api/v1/user-sync")
+async def save_user_sync_state(payload: UserSyncPayload):
+    """
+    Description: Stores live workspace state (connected DB, chat sessions, query history) for cross-device real-time sync.
+    """
+    email = payload.user_email.strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="User email required for cross-device sync.")
+    
+    current = USER_SYNC_STORE.get(email, {})
+    new_state = {
+        "db_config": payload.db_config if payload.db_config is not None else current.get("db_config"),
+        "sessions": payload.sessions if payload.sessions is not None else current.get("sessions"),
+        "active_session_id": payload.active_session_id if payload.active_session_id is not None else current.get("active_session_id"),
+        "history": payload.history if payload.history is not None else current.get("history"),
+        "pinned_cards": payload.pinned_cards if payload.pinned_cards is not None else current.get("pinned_cards"),
+        "updated_at": payload.updated_at or time.time()
+    }
+    USER_SYNC_STORE[email] = new_state
+    return {"success": True, "updated_at": new_state["updated_at"]}
+
+@app.get("/api/v1/user-sync/{user_email}")
+async def get_user_sync_state(user_email: str):
+    """
+    Description: Retrieves current live workspace state for real-time cross-device sync.
+    """
+    email = user_email.strip().lower()
+    state = USER_SYNC_STORE.get(email)
+    if not state:
+        return {"exists": False}
+    return {"exists": True, "state": state}
+
 @app.post("/api/v1/db/health-check")
 async def run_database_health_check(request: SchemaRequest):
     """

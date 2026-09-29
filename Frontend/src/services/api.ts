@@ -349,3 +349,31 @@ export const translateExplanation = async (
     return { success: false, translated_text: explanation };
   }
 };
+
+export const syncUserState = async (payload: {
+  user_email: string;
+  db_config?: any;
+  sessions?: any[];
+  active_session_id?: string;
+  history?: any[];
+  pinned_cards?: any[];
+  updated_at?: number;
+}): Promise<boolean> => {
+  try {
+    await apiClient.post("/api/v1/user-sync", payload);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const fetchUserSyncState = async (userEmail: string): Promise<{ exists: boolean; state?: any }> => {
+  try {
+    const response = await apiClient.get<{ exists: boolean; state?: any }>(
+      `/api/v1/user-sync/${encodeURIComponent(userEmail)}`,
+    );
+    return response.data;
+  } catch {
+    return { exists: false };
+  }
+};

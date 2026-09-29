@@ -21,6 +21,7 @@ import {
   LogOut,
   CheckCircle2,
   Layers,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Database3DCanvas } from "./Database3DCanvas";
@@ -369,38 +370,46 @@ export const CustomUserProfileDropdown: React.FC<{
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 z-[300] bg-[#0F172A]/40 backdrop-blur-xs flex items-start justify-end p-3 sm:p-4"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute right-0 top-full mt-2 w-64 bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-4 shadow-2xl space-y-3 z-50 text-xs text-[#0F172A]"
+            className="mt-12 sm:mt-14 w-72 max-w-[90vw] bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4 text-xs text-[#0F172A] animate-in fade-in zoom-in-95 duration-150"
           >
-            <div className="flex items-center gap-3 border-b border-[#E2E8F0] pb-3">
-              <div className="w-10 h-10 rounded-xl bg-[#10B981] text-[#FFFFFF] font-black text-sm flex items-center justify-center shadow-inner">
-                {userContext.userName.charAt(0).toUpperCase()}
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-[#10B981] text-[#FFFFFF] font-black text-sm flex items-center justify-center shadow-inner shrink-0">
+                  {userContext.userName.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="font-bold text-sm text-[#0F172A] block truncate">
+                    {userContext.userName}
+                  </span>
+                  <span className="text-[11px] text-[#047857] font-mono block truncate">
+                    {userContext.userEmail}
+                  </span>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <span className="font-bold text-sm text-[#0F172A] block truncate">
-                  {userContext.userName}
-                </span>
-                <span className="text-[11px] text-[#047857] font-mono block truncate">
-                  {userContext.userEmail}
-                </span>
-              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-[#64748B] hover:text-[#0F172A] p-1 rounded-lg hover:bg-[#F1F5F9] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <div className="space-y-1.5 py-1">
-              <div className="flex items-center justify-between text-[11px] bg-[#F8FAFC] p-2 rounded-lg border border-[#E2E8F0]">
-                <span className="text-[#475569]">Session Sync</span>
-                <span className="text-[#047857] font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Active
+            <div className="space-y-2 py-1">
+              <div className="flex items-center justify-between text-[11px] bg-[#ECFDF5] p-2.5 rounded-xl border border-[#10B981]/30">
+                <span className="text-[#047857] font-semibold">Cross-Device Sync</span>
+                <span className="text-[#047857] font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" /> Active
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-[11px] bg-[#F8FAFC] p-2 rounded-lg border border-[#E2E8F0]">
-                <span className="text-[#475569]">Workspace Mode</span>
+              <div className="flex items-center justify-between text-[11px] bg-[#F8FAFC] p-2.5 rounded-xl border border-[#E2E8F0]">
+                <span className="text-[#475569] font-medium">Workspace Engine</span>
                 <span className="text-[#047857] font-semibold flex items-center gap-1">
-                  <Layers className="w-3 h-3" /> Dual-Env
+                  <Layers className="w-3.5 h-3.5 text-[#10B981]" /> SQLGuard 2.0
                 </span>
               </div>
             </div>
@@ -420,9 +429,9 @@ export const CustomUserProfileDropdown: React.FC<{
                   }
                   onSignOut();
                 }}
-                className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-semibold flex items-center justify-center gap-2 cursor-pointer transition-colors border border-rose-200"
+                className="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors border border-rose-200 shadow-2xs text-xs"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-4 h-4 text-rose-600" />
                 <span>Sign Out Workspace</span>
               </button>
             </div>

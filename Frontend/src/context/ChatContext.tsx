@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import type { ChatMessage, ChatSession, DbConfig, QueryResponseData, PinnedCardItem } from "../types";
-import { submitAnalyticsQuery } from "../services/api";
+import { submitAnalyticsQuery, syncUserState, fetchUserSyncState } from "../services/api";
 import { toast } from "sonner";
 
 interface ChatContextType {
@@ -49,6 +49,8 @@ export const ChatProvider: React.FC<{
   const userName = userContext?.userName || "Senior AI Engineer";
 
   const storagePrefix = `qs_user_${userId}`;
+  const lastSyncTimestamp = useRef<number>(Date.now());
+  const isSyncingFromRemote = useRef<boolean>(false);
 
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
     const saved = localStorage.getItem(`${storagePrefix}_sessions`);
@@ -112,13 +114,37 @@ export const ChatProvider: React.FC<{
     }
   }, [userId]);
 
+  // Push local updates to backend for real-time cross-device sync
+  const pushSyncToRemote = (updatedFields: {
+    sessions?: ChatSession[];
+    activeSessionId?: string;
+    dbConfig?: DbConfig | null;
+    history?: QueryResponseData[];
+    pinnedCards?: PinnedCardItem[];
+  }) => {
+    if (isSyncingFromRemote.current || !userEmail) return;
+    const now = Date.now();
+    lastSyncTimestamp.current = now;
+    syncUserState({
+      user_email: userEmail,
+      db_config: updatedFields.dbConfig !== undefined ? updatedFields.dbConfig : dbConfig,
+      sessions: updatedFields.sessions !== undefined ? updatedFields.sessions : sessions,
+      active_session_id: updatedFields.activeSessionId !== undefined ? updatedFields.activeSessionId : activeSessionId,
+      history: updatedFields.history !== undefined ? updatedFields.history : history,
+      pinned_cards: updatedFields.pinnedCards !== undefined ? updatedFields.pinnedCards : pinnedCards,
+      updated_at: now,
+    });
+  };
+
   useEffect(() => {
     localStorage.setItem(`${storagePrefix}_sessions`, JSON.stringify(sessions));
+    pushSyncToRemote({ sessions });
   }, [sessions, storagePrefix]);
 
   useEffect(() => {
     if (activeSessionId) {
       localStorage.setItem(`${storagePrefix}_active_session`, activeSessionId);
+      pushSyncToRemote({ activeSessionId });
     }
   }, [activeSessionId, storagePrefix]);
 
@@ -128,15 +154,71 @@ export const ChatProvider: React.FC<{
     } else {
       localStorage.removeItem(`${storagePrefix}_db_config`);
     }
+    pushSyncToRemote({ dbConfig });
   }, [dbConfig, storagePrefix]);
 
   useEffect(() => {
     localStorage.setItem(`${storagePrefix}_history`, JSON.stringify(history));
+    pushSyncToRemote({ history });
   }, [history, storagePrefix]);
 
   useEffect(() => {
     localStorage.setItem(`${storagePrefix}_pinned_cards`, JSON.stringify(pinnedCards));
+    pushSyncToRemote({ pinnedCards });
   }, [pinnedCards, storagePrefix]);
+
+  // Real-time Background Polling Sync Loop across all logged-in devices
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const checkRemoteSync = async () => {
+      if (loading) return; // don't interrupt active query processing
+      try {
+        const res = await fetchUserSyncState(userEmail);
+        if (res.exists && res.state && res.state.updated_at) {
+          if (res.state.updated_at > lastSyncTimestamp.current + 500) {
+            isSyncingFromRemote.current = true;
+            lastSyncTimestamp.current = res.state.updated_at;
+
+            const remote = res.state;
+            if (remote.db_config !== undefined) {
+              setDbConfig(remote.db_config);
+            }
+            if (remote.sessions && Array.isArray(remote.sessions) && remote.sessions.length > 0) {
+              setSessions(remote.sessions);
+            }
+            if (remote.active_session_id) {
+              setActiveSessionId(remote.active_session_id);
+            }
+            if (remote.history && Array.isArray(remote.history)) {
+              setHistory(remote.history);
+            }
+            if (remote.pinned_cards && Array.isArray(remote.pinned_cards)) {
+              setPinnedCards(remote.pinned_cards);
+            }
+
+            setTimeout(() => {
+              isSyncingFromRemote.current = false;
+            }, 300);
+          }
+        }
+      } catch {
+        // quiet fallback
+      }
+    };
+
+    // Initial check on mount & window focus
+    checkRemoteSync();
+    window.addEventListener("focus", checkRemoteSync);
+
+    // Poll every 2.5 seconds
+    const interval = setInterval(checkRemoteSync, 2500);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", checkRemoteSync);
+    };
+  }, [userEmail, loading]);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
   const messages = activeSession?.messages || [];
