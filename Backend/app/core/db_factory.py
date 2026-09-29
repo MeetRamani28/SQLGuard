@@ -67,7 +67,24 @@ def get_db_connection(db_config: dict = None):
         if db_config.get("sqlite_path") and db_config["sqlite_path"].strip():
             path = os.path.abspath(db_config["sqlite_path"].strip())
             if not os.path.exists(path):
-                raise RuntimeError(f"SQLite file not found at path: {path}")
+                # Fallback to production Supabase Postgres if configured
+                if getattr(settings, "DATABASE_URL", None) and settings.APP_ENV != "development":
+                    try:
+                        conn = psycopg2.connect(
+                            settings.DATABASE_URL,
+                            cursor_factory=RealDictCursor,
+                            connect_timeout=8
+                        )
+                        return conn, "postgres"
+                    except Exception:
+                        pass
+                
+                # Auto-create SQLite database file if not exists
+                dir_name = os.path.dirname(path)
+                if dir_name and not os.path.exists(dir_name):
+                    os.makedirs(dir_name, exist_ok=True)
+                open(path, "a").close()
+
             conn = sqlite3.connect(path)
             conn.row_factory = sqlite3.Row
             conn.execute("PRAGMA foreign_keys = ON;")

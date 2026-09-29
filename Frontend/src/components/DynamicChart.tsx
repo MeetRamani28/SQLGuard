@@ -26,6 +26,7 @@ import {
   ChevronRight,
   Database,
   TrendingUp,
+  PieChart as PieChartIcon,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -118,6 +119,34 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
   const xAxisKey = labelKey || keys[0];
   const valueKeys = numericKeys;
   const activeMetricKey = numericKeys[0] || keys[1] || keys[0] || "";
+
+  const sanitizedChartData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    return data.map((row: any) => {
+      const cleanRow: Record<string, any> = {};
+      Object.keys(row).forEach((key) => {
+        const val = row[key];
+        if (val !== null && val !== undefined && typeof val !== "boolean") {
+          const num = Number(val);
+          if (!isNaN(num) && typeof val !== "object" && String(val).trim() !== "") {
+            cleanRow[key] = num;
+          } else {
+            cleanRow[key] = val;
+          }
+        } else {
+          cleanRow[key] = val;
+        }
+      });
+      return cleanRow;
+    });
+  }, [data]);
+
+  const hasValidPieMetrics = useMemo(() => {
+    if (!sanitizedChartData || sanitizedChartData.length === 0 || !activeMetricKey) return false;
+    return sanitizedChartData.some(
+      (row: any) => typeof row[activeMetricKey] === "number" && !isNaN(row[activeMetricKey]) && row[activeMetricKey] > 0
+    );
+  }, [sanitizedChartData, activeMetricKey]);
 
   // Check if result is a single metric KPI card (e.g. 1 row, <= 2 columns)
   const isKpiMetric = data.length === 1 && keys.length <= 2;
@@ -310,9 +339,9 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
         /* VISUALIZATION CONTAINER */
         <div className="w-full">
           {chartType === "bar" && (
-            <div className="h-80 w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data}>
+            <div className="h-80 w-full pt-2 min-h-[280px]">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={sanitizedChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
                   <XAxis dataKey={xAxisKey} stroke="#3ECF8E" fontSize={12} />
                   <YAxis stroke="#3ECF8E" fontSize={12} />
@@ -341,9 +370,9 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
           )}
 
           {chartType === "line" && (
-            <div className="h-80 w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data}>
+            <div className="h-80 w-full pt-2 min-h-[280px]">
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={sanitizedChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
                   <XAxis dataKey={xAxisKey} stroke="#3ECF8E" fontSize={12} />
                   <YAxis stroke="#3ECF8E" fontSize={12} />
@@ -373,43 +402,51 @@ export const DynamicChart: React.FC<DynamicChartProps> = ({
           )}
 
           {chartType === "pie" && (
-            <div className="h-80 w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Tooltip
-                    formatter={(value: any, name: any) => [
-                      typeof value === "number" ? value.toLocaleString() : value,
-                      name || activeMetricKey,
-                    ]}
-                    contentStyle={{
-                      backgroundColor: "#232323",
-                      borderColor: "#333333",
-                      color: "#FFFFFF",
-                      borderRadius: "12px",
-                    }}
-                  />
-                  <Legend />
-                  <Pie
-                    data={data}
-                    dataKey={activeMetricKey}
-                    nameKey={labelKey}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={105}
-                    label={({ name, percent }: any) =>
-                      `${name ? String(name).slice(0, 14) : ""}: ${(((percent as number) || 0) * 100).toFixed(0)}%`
-                    }
-                  >
-                    {data.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            hasValidPieMetrics ? (
+              <div className="h-80 w-full pt-2 min-h-[280px]">
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Tooltip
+                      formatter={(value: any, name: any) => [
+                        typeof value === "number" ? value.toLocaleString() : value,
+                        name || activeMetricKey,
+                      ]}
+                      contentStyle={{
+                        backgroundColor: "#232323",
+                        borderColor: "#333333",
+                        color: "#FFFFFF",
+                        borderRadius: "12px",
+                      }}
+                    />
+                    <Legend />
+                    <Pie
+                      data={sanitizedChartData}
+                      dataKey={activeMetricKey}
+                      nameKey={labelKey}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={105}
+                      label={({ name, percent }: any) =>
+                        `${name ? String(name).slice(0, 14) : ""}: ${(((percent as number) || 0) * 100).toFixed(0)}%`
+                      }
+                    >
+                      {sanitizedChartData.map((_, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-72 w-full flex flex-col items-center justify-center p-6 bg-[#2C2C2C] rounded-2xl border border-dashed border-[#333333] text-center space-y-2 my-2">
+                <PieChartIcon className="w-8 h-8 text-[#71717A]" />
+                <p className="text-xs font-semibold text-[#FFFFFF]">No Pie Chart Metrics Available</p>
+                <p className="text-[11px] text-[#A1A1AA]">This dataset does not contain positive numeric values suitable for pie chart distribution.</p>
+              </div>
+            )
           )}
 
           {/* ADVANCED ENTERPRISE TABLE UI */}
