@@ -377,3 +377,12 @@ export const fetchUserSyncState = async (userEmail: string): Promise<{ exists: b
     return { exists: false };
   }
 };
+
+export const pingBackendKeepAlive = async (): Promise<boolean> => {
+  try {
+    await apiClient.get("/health");
+    return true;
+  } catch {
+    return false;
+  }
+};

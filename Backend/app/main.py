@@ -208,16 +208,48 @@ SAVED_QUERIES_STORE: List[Dict[str, Any]] = [
     }
 ]
 
+import asyncio
+import httpx
+
+async def render_keep_alive_background_loop():
+    """
+    Description: Self-pinging background worker loop that pings the Render production URL
+    every 10 minutes (600s) to prevent Render free-tier instances from entering 15-minute sleep mode.
+    """
+    await asyncio.sleep(15) # Grace period after app startup
+    target_urls = [
+        "https://sqlguard-backend.onrender.com/health",
+        "http://127.0.0.1:8000/health"
+    ]
+    
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        while True:
+            for url in target_urls:
+                try:
+                    res = await client.get(url)
+                    if res.status_code == 200:
+                        break
+                except Exception:
+                    continue
+            await asyncio.sleep(600) # Ping every 10 minutes (Render timeout is 15 mins)
+
+@app.on_event("startup")
+async def start_render_keep_alive_task():
+    asyncio.create_task(render_keep_alive_background_loop())
+
 @app.get("/")
+@app.get("/health")
+@app.get("/api/v1/keep-alive")
 def health_check():
     """
-    Description: Health check endpoint to verify backend server status and environment.
+    Description: Health check & keep-alive endpoint preventing Render free-tier instance sleep mode.
     """
     return {
         "status": "online",
         "service": settings.PROJECT_NAME,
         "environment": settings.APP_ENV,
-        "model": settings.MODEL_NAME
+        "model": settings.MODEL_NAME,
+        "render_keep_alive": "ACTIVE"
     }
 
 @app.get("/api/v1/owasp/compliance")

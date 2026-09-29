@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import type { ChatMessage, ChatSession, DbConfig, QueryResponseData, PinnedCardItem } from "../types";
-import { submitAnalyticsQuery, syncUserState, fetchUserSyncState } from "../services/api";
+import { submitAnalyticsQuery, syncUserState, fetchUserSyncState, pingBackendKeepAlive } from "../services/api";
 import { toast } from "sonner";
 
 interface ChatContextType {
@@ -219,6 +219,16 @@ export const ChatProvider: React.FC<{
       window.removeEventListener("focus", checkRemoteSync);
     };
   }, [userEmail, loading]);
+
+  // Frontend Keep-Alive Heartbeat for Render Backend (Pings /health every 3 minutes)
+  useEffect(() => {
+    const pingHeartbeat = () => {
+      pingBackendKeepAlive();
+    };
+    pingHeartbeat();
+    const interval = setInterval(pingHeartbeat, 180000); // 3 minutes
+    return () => clearInterval(interval);
+  }, []);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
   const messages = activeSession?.messages || [];
