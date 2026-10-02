@@ -1,10 +1,44 @@
-# ⚡ SQLGuard: Autonomous Text-to-SQL Analytics Engine
-
-**SQLGuard** is an autonomous, enterprise-grade Text-to-SQL analytics engine designed to convert complex natural language business questions into precise, read-only SQL queries. Built with LangGraph self-correction loops, `sqlglot` AST security guardrails, multi-tenant database connection management, and multilingual support (English, Gujarati, Hindi), SQLGuard enables non-technical users to query live databases securely and visually.
-
 <div align="center">
-  <img src="docs/images/hero-dashboard.png" alt="SQLGuard Analytics Workspace Hero Image" width="100%" />
+  <img src="docs/images/logo.png" width="100" alt="SQLGuard Logo" />
+  <h1>SQLGuard</h1>
+  <h3>Enterprise-Grade Autonomous Text-to-SQL Analytics Engine</h3>
+  <p>Convert complex natural language business questions into precise, read-only SQL queries with LangGraph self-correction loops, sqlglot AST security guardrails, multi-device persistent session sync, and real-time Recharts analytics.</p>
+
+  <p>
+    <a href="https://sqlguard-alpha.vercel.app"><img src="https://img.shields.io/badge/LIVE_DEMO-SQLGUARD--ALPHA.VERCEL.APP-10B981?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" /></a>
+    <img src="https://img.shields.io/badge/FASTAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
+    <img src="https://img.shields.io/badge/REACT_19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
+    <img src="https://img.shields.io/badge/LANGGRAPH-FF6F61?style=for-the-badge&logo=python&logoColor=white" alt="LangGraph" />
+    <img src="https://img.shields.io/badge/GROQ-F05032?style=for-the-badge&logo=groq&logoColor=white" alt="Groq" />
+    <img src="https://img.shields.io/badge/SUPABASE-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
+    <img src="https://img.shields.io/badge/SQLGLOT-E11D48?style=for-the-badge&logo=shield&logoColor=white" alt="SQLGlot AST" />
+  </p>
 </div>
+
+---
+
+## 📸 Screenshots & UI Showcase
+
+### 1. Main Analytics Workspace & Hero Dashboard
+![Main Workspace & Hero Dashboard](docs/images/hero-dashboard.png)
+
+### 2. Interactive ER Schema Diagram & Entity Graph
+![Interactive ER Schema Diagram](docs/images/er-schema-diagram.png)
+
+### 3. Multilingual NLU & Recharts Visualizations
+![Multilingual Business Insight & Recharts](docs/images/multilingual-chart.png)
+
+### 4. Database Schema Explorer Catalog
+![Database Schema Explorer Modal](docs/images/schema-explorer.png)
+
+### 5. Query Audit Log & Latency Metrics
+![Query Audit Log & Latency Metrics](docs/images/query-history-log.png)
+
+### 6. Saved Query Templates & Bookmarks
+![Saved Query Templates & Bookmarks](docs/images/saved-queries.png)
+
+### 7. System Health & Observability Metrics
+![System Health & Observability Metrics](docs/images/system-health.png)
 
 ---
 
@@ -12,30 +46,14 @@
 
 * **LangGraph Self-Correction Loop:** Autonomous 5-node state machine that intercepts database execution or schema errors and re-prompts the LLM to heal syntax errors automatically.
 * **AST Security Guardrails:** Strict SQL parsing layer (`sqlglot`) enforcing read-only operations by analyzing the Abstract Syntax Tree (AST) to block destructive operations (`DELETE`, `DROP`, `UPDATE`, `INSERT`, `ALTER`, etc.) with immediate security hard-stops.
-* **Dual-Environment Architecture:** Runs on a zero-config local SQLite database (`sqlguard_dev.db`) in development mode, and connects to Supabase or custom cloud PostgreSQL in production.
-* **Enterprise Multi-Chat Session UI:** ChatGPT/Claude-style conversation thread management with new chat creation, inline session title editing, and deletion.
-* **Single Unified Response Card:** Integrates query title, execution latency (`⚡ 42ms`), SQL statement, AST guard badge, expandable logic breakdown, and visualization into **one single cohesive card**.
+* **Multi-Device Persistent Session Sync:** ChatGPT / Gemini-style multi-device session management allowing users to sign in simultaneously across 5+ browsers/devices without force logouts, with real-time workspace sync via `/api/v1/user-sync`.
+* **Sub-2-Second High-Speed Performance:** 0ms deterministic chart selection engine combined with `TRANSLATION_CACHE` fast-path matching for instant sub-2-second query responses and instant Gujarati/Hindi translations.
+* **Dual-Environment & Universal DB Connectivity:** Runs on a zero-config local SQLite database (`sqlguard_dev.db`) in development mode, and connects to Supabase, Neon, PostgreSQL, MongoDB, or AWS RDS in production.
+* **Single Unified Response Card:** Integrates query title, execution latency (`⚡ 42ms`), SQL statement, AST guard badge, expandable logic breakdown, and visual charts into **one single cohesive card**.
 * **Multilingual & Code-Switched NLU:** Native natural language understanding for **English**, **Gujarati (ગુજરાતી / Gujlish)**, and **Hindi (हिंदी / Hinglish)** (e.g. *"how many data vechana che"*, *"ketla users che database ma?"*, *"sabse jyada order kiske hain"*).
-* **Database Connection Presets Manager:** Connect to PostgreSQL, Supabase, Neon, Railway, Render, or SQLite. Save database presets for 1-click switching with built-in Supabase IPv4 Pooler auto-fallback.
-* **Database Schema Explorer:** Real-time catalog inspector modal to view all tables, column definitions, data types, and column counts of connected database instances.
+* **Database Schema Explorer & ER Diagram:** Real-time catalog inspector modal to view all tables, column definitions, data types, and visual entity-relationship graphs.
 * **Enterprise Data Table & KPI Stat Cards:** Single aggregate queries render as sleek **KPI Stat Cards**, while multi-row queries render as **searchable, column-sortable, paginated tables**.
 * **Sanitized CSV & PDF Export:** One-click exports of generated data tables and visual charts formatted with clean, sanitized question filenames.
-
----
-
-## 🖼️ Interface Screenshots & Feature Showcase
-
-| 🌐 Multilingual Business Insight & Recharts Pie Chart | 📊 Interactive ER Schema Diagram |
-| :---: | :---: |
-| <img src="docs/images/multilingual-chart.png" alt="Multilingual Business Insight and Recharts" width="100%" /> | <img src="docs/images/er-schema-diagram.png" alt="Interactive ER Schema Diagram" width="100%" /> |
-
-| 🔍 Database Schema Explorer Catalog | ⏱️ Query Audit Log & History |
-| :---: | :---: |
-| <img src="docs/images/schema-explorer.png" alt="Database Schema Explorer Modal" width="100%" /> | <img src="docs/images/query-history-log.png" alt="Query Audit Log and History Modal" width="100%" /> |
-
-| 🔖 Saved Query Templates & Bookmarks | ⚡ System Health & Observability Metrics |
-| :---: | :---: |
-| <img src="docs/images/saved-queries.png" alt="Saved Query Templates and Bookmarks Modal" width="100%" /> | <img src="docs/images/system-health.png" alt="System Health and Observability Metrics Modal" width="100%" /> |
 
 ---
 
@@ -58,7 +76,7 @@
                        │                                                            │
                        │◄───────────────────────────────────────────────────────────┘
                        ▼
-       [ Chart & Insight Mapping Node ]
+       [ High-Speed Chart & Insight Mapping Node ]
                        │
                        ▼
 [ Unified React UI: QueryResponseCard, Recharts, Schema Explorer, CSV/PDF Export ]
@@ -87,7 +105,7 @@ SQLGuard/
 │   │   ├── context/          # ChatContext API for multi-session state management
 │   │   ├── services/         # Axios API service endpoints
 │   │   ├── types/            # TypeScript interfaces (QueryResponseData, DbConfig, ChatSession)
-│   │   ├── App.tsx font      # Dashboard layout, navigation, & conversation stream
+│   │   ├── App.tsx           # Dashboard layout, navigation, & conversation stream
 │   │   └── index.css         # Tailwind CSS setup & dark theme styling
 │   ├── package.json          # React, Framer Motion, Recharts, Sonner, jsPDF, html2canvas
 │   └── vite.config.ts        # Vite build configuration
@@ -207,7 +225,7 @@ cd SQLGuard
    - **Output Directory**: `dist`
 5. Under **Environment Variables**, add:
    - `VITE_API_BASE_URL`: `https://sqlguard-backend.onrender.com` (Your Render backend URL)
-6. Click **Deploy**. Vercel will assign a production URL (e.g. `https://sqlguard.vercel.app`).
+6. Click **Deploy**. Vercel will assign a production URL (e.g. `https://sqlguard-alpha.vercel.app`).
 
 ---
 
@@ -215,18 +233,5 @@ cd SQLGuard
 
 * **Frontend:** React 19, TypeScript, Tailwind CSS, Framer Motion, Recharts, Sonner, Lucide Icons, Vite
 * **Backend:** FastAPI, LangChain, LangGraph, Pydantic, Uvicorn
-* **SQL Engine & Security:** `sqlglot` (AST Guardrail), `psycopg2`, `sqlite3`
+* **SQL Engine & Security:** `sqlglot` (AST Guardrail), `psycopg2`, `pymongo`, `sqlite3`
 * **LLM Engine:** Groq API (`openai/gpt-oss-20b` / `llama-3.3-70b-versatile`)
-
----
-
-## 👤 Author
-
-**Meet Ramani**
-- **GitHub:** [https://github.com/MeetRamani28](https://github.com/MeetRamani28)
-
----
-
-## 📝 License
-
-Distributed under the MIT License. See `LICENSE` for details.
