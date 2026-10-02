@@ -43,22 +43,42 @@ def get_database_schema(db_config: dict = None) -> str:
         collections = db.list_collection_names()
         tables_dict = {}
 
+        # Default fallback schemas for known Mongoose collections if 0 docs exist in collection
+        DEFAULT_MONGO_COLLECTION_FALLBACKS = {
+            "contacts": {"_id": "string", "name": "string", "email": "string", "message": "string", "createdAt": "datetime", "updatedAt": "datetime"},
+            "contact": {"_id": "string", "name": "string", "email": "string", "message": "string", "createdAt": "datetime", "updatedAt": "datetime"},
+            "appointmentmedicalrecords": {"_id": "string", "doctor": "string", "user": "string", "recordDetails": "object", "createdAt": "datetime", "updatedAt": "datetime"},
+            "appointmentmedicalrecord": {"_id": "string", "doctor": "string", "user": "string", "recordDetails": "object", "createdAt": "datetime", "updatedAt": "datetime"},
+            "specializations": {"_id": "string", "name": "string", "description": "string", "createdAt": "datetime", "updatedAt": "datetime"},
+            "specialization": {"_id": "string", "name": "string", "description": "string", "createdAt": "datetime", "updatedAt": "datetime"},
+        }
+
         for col_name in collections:
             if col_name.startswith("system."):
                 continue
-            sample_docs = list(db[col_name].find({}).limit(10))
+            sample_docs = list(db[col_name].find({}).limit(50))
             fields = {}
             for doc in sample_docs:
                 for k, v in doc.items():
                     if k not in fields:
                         v_type = type(v).__name__
-                        if v_type == "ObjectId":
+                        if v_type in ("ObjectId", "str"):
                             v_type = "string"
                         elif v_type == "dict":
                             v_type = "object"
                         elif v_type == "list":
                             v_type = "array"
+                        elif v_type == "int":
+                            v_type = "number"
                         fields[k] = v_type
+
+            if not fields:
+                col_lower = col_name.lower().replace("-", "").replace("_", "")
+                if col_lower in DEFAULT_MONGO_COLLECTION_FALLBACKS:
+                    fields = DEFAULT_MONGO_COLLECTION_FALLBACKS[col_lower]
+                else:
+                    fields = {"_id": "string", "name": "string", "status": "string", "createdAt": "datetime"}
+
             cols_str_list = [f"{k} ({v_type})" for k, v_type in fields.items()]
             tables_dict[col_name] = cols_str_list
 

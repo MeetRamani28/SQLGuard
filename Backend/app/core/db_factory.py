@@ -82,6 +82,45 @@ class MongoDictCursor:
                     except Exception:
                         pass
 
+            def _sanitize_mongo_val(val):
+                if val is None or isinstance(val, (int, float, bool)):
+                    return val
+                if type(val).__name__ == "ObjectId":
+                    return str(val)
+                if isinstance(val, dict):
+                    cleaned_sub = {}
+                    for sub_k, sub_v in val.items():
+                        if type(sub_v).__name__ == "ObjectId":
+                            cleaned_sub[sub_k] = str(sub_v)
+                        elif isinstance(sub_v, bytes):
+                            try:
+                                cleaned_sub[sub_k] = sub_v.decode("utf-8", errors="ignore")
+                            except Exception:
+                                cleaned_sub[sub_k] = "<binary data>"
+                        elif isinstance(sub_v, str):
+                            sub_str = sub_v
+                            if "\\x" in sub_str or "\x00" in sub_str:
+                                sub_str = re.sub(r'\\x[0-9a-fA-F]{2}', '', sub_str)
+                                sub_str = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sub_str).strip()
+                            cleaned_sub[sub_k] = sub_str
+                        else:
+                            cleaned_sub[sub_k] = sub_v
+                    try:
+                        return json.dumps(cleaned_sub, ensure_ascii=False)
+                    except Exception:
+                        return str(cleaned_sub)
+                if isinstance(val, bytes):
+                    try:
+                        return val.decode("utf-8", errors="ignore")
+                    except Exception:
+                        return "<binary data>"
+
+                s_val = str(val)
+                if "\\x" in s_val or "\x00" in s_val:
+                    s_val = re.sub(r'\\x[0-9a-fA-F]{2}', '', s_val)
+                    s_val = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', s_val).strip()
+                return s_val
+
             raw_docs = list(collection.find({}).limit(limit_val))
             cleaned_rows = []
             for doc in raw_docs:
@@ -89,10 +128,8 @@ class MongoDictCursor:
                 for k, v in doc.items():
                     if k == "_id":
                         row["_id"] = str(v)
-                    elif isinstance(v, (dict, list)):
-                        row[k] = json.dumps(v, default=str)
                     else:
-                        row[k] = str(v) if not isinstance(v, (int, float, bool, type(None))) else v
+                        row[k] = _sanitize_mongo_val(v)
                 cleaned_rows.append(row)
             self.last_results = cleaned_rows
         else:

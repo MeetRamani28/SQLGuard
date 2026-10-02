@@ -434,25 +434,49 @@ async def generate_data_narrative(request: NarrativeRequest):
     narrative += "Data governance checks verified PII redaction and AST read-only safety."
     return {"narrative": narrative}
 
+TRANSLATION_CACHE = {}
+
 @app.post("/api/v1/explain-translation")
 async def translate_explanation_language(request: TranslateExplanationRequest):
     """
-    Description: Translates business insights & SQL explanation into Gujarati or Hindi.
+    Description: Translates business insights & SQL explanation into Gujarati or Hindi with instant caching & fast-path matching.
     """
+    exp_text = request.explanation.strip()
+    target_lang = request.target_language
+    cache_key = (exp_text, target_lang)
+
+    if cache_key in TRANSLATION_CACHE:
+        return {"success": True, "translated_text": TRANSLATION_CACHE[cache_key], "target_language": target_lang}
+
+    # Fast-path instant pattern matching for common system insights (0ms latency)
+    match_retrieved = re.search(r'(?:Successfully\s+retrieved|Retrieved)\s+(\d+)\s+(?:rows|records)', exp_text, re.IGNORECASE)
+    if match_retrieved:
+        num = match_retrieved.group(1)
+        fast_res = f"{num} पंक्तियाँ सफलतापूर्वक प्राप्त हुईं।" if target_lang == "hi" else f"{num} પંક્તિઓ સફળતાપૂર્વક મેળવી."
+        TRANSLATION_CACHE[cache_key] = fast_res
+        return {"success": True, "translated_text": fast_res, "target_language": target_lang}
+
+    if "no data records" in exp_text.lower():
+        fast_res = "इस क्वेरी के लिए कोई डेटा रिकॉर्ड वापस नहीं आया।" if target_lang == "hi" else "આ ક્વેરી માટે કોઈ ડેટા રેકોર્ડ મળ્યો નથી."
+        TRANSLATION_CACHE[cache_key] = fast_res
+        return {"success": True, "translated_text": fast_res, "target_language": target_lang}
+
     from langchain_core.prompts import ChatPromptTemplate
     from app.agent.nodes import get_llm
 
-    target_lang_name = "Gujarati (ગુજરાતી)" if request.target_language == "gu" else "Hindi (हिंदी)"
+    target_lang_name = "Gujarati (ગુજરાતી)" if target_lang == "gu" else "Hindi (हिंदी)"
     prompt = ChatPromptTemplate.from_messages([
         ("system", f"You are a professional multilingual translator. Translate the following database business insight accurately into {target_lang_name}. Return ONLY the translated sentence without additional commentary."),
         ("human", "{explanation}")
     ])
     chain = prompt | get_llm()
     try:
-        response = chain.invoke({"explanation": request.explanation})
-        return {"success": True, "translated_text": response.content.strip(), "target_language": request.target_language}
+        response = chain.invoke({"explanation": exp_text})
+        translated = response.content.strip()
+        TRANSLATION_CACHE[cache_key] = translated
+        return {"success": True, "translated_text": translated, "target_language": target_lang}
     except Exception as e:
-        return {"success": False, "translated_text": request.explanation, "error": str(e)}
+        return {"success": False, "translated_text": exp_text, "error": str(e)}
 
 @app.get("/api/v1/saved-queries", response_model=List[SavedQueryItem])
 async def get_saved_query_templates():

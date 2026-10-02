@@ -1069,77 +1069,99 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
               </div>
 
               {activeChartType === "bar" && (
-                <div className="h-64 sm:h-72 w-full max-w-full overflow-x-hidden pt-1 min-h-[260px]">
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={sanitizedChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                      <XAxis dataKey={xAxisKey} stroke="#475569" fontSize={11} />
-                      <YAxis stroke="#475569" fontSize={11} />
-                      <Tooltip
-                        cursor={{ fill: "rgba(16, 185, 129, 0.08)" }}
-                        wrapperStyle={{ maxWidth: "80vw", zIndex: 100 }}
-                        contentStyle={{
-                          backgroundColor: "#FFFFFF",
-                          borderColor: "#10B981",
-                          color: "#0F172A",
-                          borderRadius: "10px",
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                          maxWidth: "80vw",
-                          wordBreak: "break-all",
-                          whiteSpace: "normal",
-                          fontSize: "11px",
-                        }}
-                      />
-                      <Legend />
-                      {(selectedMetric ? [selectedMetric] : numericKeys).map((key, idx) => (
-                        <Bar
-                          key={key}
-                          dataKey={key}
-                          fill={paletteColors[idx % paletteColors.length]}
-                          radius={[6, 6, 0, 0]}
+                numericKeys.length > 0 ? (
+                  <div className="h-64 sm:h-72 w-full max-w-full overflow-x-hidden pt-1 min-h-[260px]">
+                    <ResponsiveContainer width="100%" height={260}>
+                      <BarChart data={sanitizedChartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                        <XAxis dataKey={xAxisKey} stroke="#475569" fontSize={11} />
+                        <YAxis stroke="#475569" fontSize={11} />
+                        <Tooltip
+                          cursor={{ fill: "rgba(16, 185, 129, 0.08)" }}
+                          wrapperStyle={{ maxWidth: "80vw", zIndex: 100 }}
+                          contentStyle={{
+                            backgroundColor: "#FFFFFF",
+                            borderColor: "#10B981",
+                            color: "#0F172A",
+                            borderRadius: "10px",
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                            maxWidth: "80vw",
+                            wordBreak: "break-all",
+                            whiteSpace: "normal",
+                            fontSize: "11px",
+                          }}
                         />
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                        <Legend />
+                        {(selectedMetric ? [selectedMetric] : numericKeys).map((key, idx) => (
+                          <Bar
+                            key={key}
+                            dataKey={key}
+                            fill={paletteColors[idx % paletteColors.length]}
+                            radius={[6, 6, 0, 0]}
+                          />
+                        ))}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-64 w-full flex flex-col items-center justify-center p-6 bg-[#F8FAFC] rounded-2xl border border-dashed border-[#CBD5E1] text-center space-y-2 my-2">
+                    <Database className="w-8 h-8 text-[#94A3B8]" />
+                    <p className="text-xs font-semibold text-[#0F172A]">No Numeric Metrics for Bar Chart</p>
+                    <p className="text-[11px] text-[#64748B]">This dataset contains text details without numeric columns for bar visualization.</p>
+                    <button onClick={() => setActiveChartType("table")} className="px-3 py-1 bg-[#10B981] text-white text-xs rounded-lg font-semibold cursor-pointer">
+                      Switch to Table View
+                    </button>
+                  </div>
+                )
               )}
 
               {activeChartType === "line" && (
-                <div className="h-64 sm:h-72 w-full max-w-full overflow-x-hidden pt-1 min-h-[260px]">
-                  <ResponsiveContainer width="100%" height={260}>
-                    <LineChart data={sanitizedChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                      <XAxis dataKey={xAxisKey} stroke="#475569" fontSize={11} />
-                      <YAxis stroke="#475569" fontSize={11} />
-                      <Tooltip
-                        cursor={{ stroke: "#10B981", strokeWidth: 1, strokeDasharray: "4 4" }}
-                        wrapperStyle={{ maxWidth: "80vw", zIndex: 100 }}
-                        contentStyle={{
-                          backgroundColor: "#FFFFFF",
-                          borderColor: "#10B981",
-                          color: "#0F172A",
-                          borderRadius: "10px",
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                          maxWidth: "80vw",
-                          wordBreak: "break-all",
-                          whiteSpace: "normal",
-                          fontSize: "11px",
-                        }}
-                      />
-                      <Legend />
-                      {(selectedMetric ? [selectedMetric] : numericKeys).map((key, idx) => (
-                        <Line
-                          key={key}
-                          type="monotone"
-                          dataKey={key}
-                          stroke={paletteColors[idx % paletteColors.length] || CHART_COLORS[idx % CHART_COLORS.length]}
-                          strokeWidth={3}
-                          dot={{ r: 4 }}
+                numericKeys.length > 0 ? (
+                  <div className="h-64 sm:h-72 w-full max-w-full overflow-x-hidden pt-1 min-h-[260px]">
+                    <ResponsiveContainer width="100%" height={260}>
+                      <LineChart data={sanitizedChartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                        <XAxis dataKey={xAxisKey} stroke="#475569" fontSize={11} />
+                        <YAxis stroke="#475569" fontSize={11} />
+                        <Tooltip
+                          cursor={{ stroke: "#10B981", strokeWidth: 1, strokeDasharray: "4 4" }}
+                          wrapperStyle={{ maxWidth: "80vw", zIndex: 100 }}
+                          contentStyle={{
+                            backgroundColor: "#FFFFFF",
+                            borderColor: "#10B981",
+                            color: "#0F172A",
+                            borderRadius: "10px",
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                            maxWidth: "80vw",
+                            wordBreak: "break-all",
+                            whiteSpace: "normal",
+                            fontSize: "11px",
+                          }}
                         />
-                      ))}
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                        <Legend />
+                        {(selectedMetric ? [selectedMetric] : numericKeys).map((key, idx) => (
+                          <Line
+                            key={key}
+                            type="monotone"
+                            dataKey={key}
+                            stroke={paletteColors[idx % paletteColors.length] || CHART_COLORS[idx % CHART_COLORS.length]}
+                            strokeWidth={3}
+                            dot={{ r: 4 }}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-64 w-full flex flex-col items-center justify-center p-6 bg-[#F8FAFC] rounded-2xl border border-dashed border-[#CBD5E1] text-center space-y-2 my-2">
+                    <TrendingUp className="w-8 h-8 text-[#94A3B8]" />
+                    <p className="text-xs font-semibold text-[#0F172A]">No Numeric Metrics for Line Chart</p>
+                    <p className="text-[11px] text-[#64748B]">This dataset contains text details without numeric trend metrics.</p>
+                    <button onClick={() => setActiveChartType("table")} className="px-3 py-1 bg-[#10B981] text-white text-xs rounded-lg font-semibold cursor-pointer">
+                      Switch to Table View
+                    </button>
+                  </div>
+                )
               )}
 
               {activeChartType === "pie" && (
@@ -1272,8 +1294,18 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
                               {(currentPage - 1) * rowsPerPage + rowIdx + 1}
                             </td>
                             {keys.map((key) => (
-                              <td key={key} className="p-2.5 text-[#0F172A]">
-                                {String(row[key] ?? "")}
+                              <td key={key} className="p-2.5 text-[#0F172A] max-w-xs truncate">
+                                {(() => {
+                                  const rawVal = String(row[key] ?? "");
+                                  if (rawVal.length > 110) {
+                                    return (
+                                      <span className="cursor-help text-slate-700" title={rawVal}>
+                                        {rawVal.slice(0, 95)}...
+                                      </span>
+                                    );
+                                  }
+                                  return rawVal;
+                                })()}
                               </td>
                             ))}
                           </tr>

@@ -2,6 +2,10 @@
 
 **SQLGuard** is an autonomous, enterprise-grade Text-to-SQL analytics engine designed to convert complex natural language business questions into precise, read-only SQL queries. Built with LangGraph self-correction loops, `sqlglot` AST security guardrails, multi-tenant database connection management, and multilingual support (English, Gujarati, Hindi), SQLGuard enables non-technical users to query live databases securely and visually.
 
+<div align="center">
+  <img src="docs/images/hero-dashboard.png" alt="SQLGuard Analytics Workspace Hero Image" width="100%" />
+</div>
+
 ---
 
 ## 🌟 Key Features
@@ -16,6 +20,22 @@
 * **Database Schema Explorer:** Real-time catalog inspector modal to view all tables, column definitions, data types, and column counts of connected database instances.
 * **Enterprise Data Table & KPI Stat Cards:** Single aggregate queries render as sleek **KPI Stat Cards**, while multi-row queries render as **searchable, column-sortable, paginated tables**.
 * **Sanitized CSV & PDF Export:** One-click exports of generated data tables and visual charts formatted with clean, sanitized question filenames.
+
+---
+
+## 🖼️ Interface Screenshots & Feature Showcase
+
+| 🌐 Multilingual Business Insight & Recharts Pie Chart | 📊 Interactive ER Schema Diagram |
+| :---: | :---: |
+| <img src="docs/images/multilingual-chart.png" alt="Multilingual Business Insight and Recharts" width="100%" /> | <img src="docs/images/er-schema-diagram.png" alt="Interactive ER Schema Diagram" width="100%" /> |
+
+| 🔍 Database Schema Explorer Catalog | ⏱️ Query Audit Log & History |
+| :---: | :---: |
+| <img src="docs/images/schema-explorer.png" alt="Database Schema Explorer Modal" width="100%" /> | <img src="docs/images/query-history-log.png" alt="Query Audit Log and History Modal" width="100%" /> |
+
+| 🔖 Saved Query Templates & Bookmarks | ⚡ System Health & Observability Metrics |
+| :---: | :---: |
+| <img src="docs/images/saved-queries.png" alt="Saved Query Templates and Bookmarks Modal" width="100%" /> | <img src="docs/images/system-health.png" alt="System Health and Observability Metrics Modal" width="100%" /> |
 
 ---
 
