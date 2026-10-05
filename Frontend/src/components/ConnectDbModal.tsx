@@ -65,7 +65,11 @@ export const ConnectDbModal: React.FC<ConnectDbModalProps> = ({
   } | null>(null);
 
   useEffect(() => {
-    localStorage.setItem("qs_saved_db_connections", JSON.stringify(savedPresets));
+    try {
+      localStorage.setItem("qs_saved_db_connections", JSON.stringify(savedPresets));
+    } catch {
+      // safe fallback
+    }
   }, [savedPresets]);
 
   if (!isOpen) return null;

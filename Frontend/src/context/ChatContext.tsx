@@ -106,6 +106,55 @@ const createDefaultSession = (): ChatSession => ({
   messages: [],
 });
 
+/**
+ * Safe LocalStorage setter with QuotaExceededError protection and automatic payload compaction.
+ * Prevents browser storage quota overflow from crashing the application.
+ */
+const safeLocalStorageSet = (key: string, value: string): void => {
+  try {
+    localStorage.setItem(key, value);
+  } catch (err: unknown) {
+    console.warn(`[SQLGuard] LocalStorage quota exceeded when writing "${key}". Auto-remediating storage...`, err);
+    try {
+      // 1. If writing history, keep only 15 latest items and strip large dataset arrays
+      if (key.endsWith("_history")) {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          const trimmed = parsed.slice(0, 15).map((item) => ({
+            ...item,
+            query_result: Array.isArray(item.query_result) ? item.query_result.slice(0, 5) : item.query_result,
+          }));
+          localStorage.setItem(key, JSON.stringify(trimmed));
+          return;
+        }
+      }
+      // 2. If writing sessions, trim message history
+      if (key.endsWith("_sessions")) {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          const trimmed = parsed.slice(0, 8).map((sess) => ({
+            ...sess,
+            messages: Array.isArray(sess.messages) ? sess.messages.slice(-10) : sess.messages,
+          }));
+          localStorage.setItem(key, JSON.stringify(trimmed));
+          return;
+        }
+      }
+      // 3. Evict stale user keys if still full
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k !== key && (k.endsWith("_history") || k.endsWith("_sessions"))) {
+          localStorage.removeItem(k);
+        }
+      }
+      localStorage.setItem(key, value.slice(0, 100000));
+    } catch {
+      // Graceful fallback: operate in-memory without throwing unhandled exceptions
+      console.warn(`[SQLGuard] LocalStorage full. Continuing in-memory without breaking UI.`);
+    }
+  }
+};
+
 export const ChatProvider: React.FC<{
   children: React.ReactNode;
   userContext?: { userId: string; userEmail: string; userName: string };
@@ -245,39 +294,48 @@ export const ChatProvider: React.FC<{
   };
 
   useEffect(() => {
-    localStorage.setItem(`${storagePrefix}_sessions`, JSON.stringify(sessions));
+    safeLocalStorageSet(`${storagePrefix}_sessions`, JSON.stringify(sessions));
     pushSyncToRemote({ sessions });
   }, [sessions, storagePrefix]);
 
   useEffect(() => {
     if (activeSessionId) {
-      localStorage.setItem(`${storagePrefix}_active_session`, activeSessionId);
+      safeLocalStorageSet(`${storagePrefix}_active_session`, activeSessionId);
       pushSyncToRemote({ activeSessionId });
     }
   }, [activeSessionId, storagePrefix]);
 
   useEffect(() => {
     if (dbConfig) {
-      localStorage.setItem(`${storagePrefix}_db_config`, JSON.stringify(dbConfig));
+      safeLocalStorageSet(`${storagePrefix}_db_config`, JSON.stringify(dbConfig));
     } else {
-      localStorage.removeItem(`${storagePrefix}_db_config`);
+      try {
+        localStorage.removeItem(`${storagePrefix}_db_config`);
+      } catch {
+        // ignore
+      }
     }
     pushSyncToRemote({ dbConfig });
   }, [dbConfig, storagePrefix]);
 
   useEffect(() => {
-    localStorage.setItem(`${storagePrefix}_history`, JSON.stringify(history));
+    // Truncate heavy tabular payloads for storage to avoid browser quota exhaustion
+    const lightweightHistory = history.slice(0, 20).map((item) => ({
+      ...item,
+      query_result: Array.isArray(item.query_result) ? item.query_result.slice(0, 5) : item.query_result,
+    }));
+    safeLocalStorageSet(`${storagePrefix}_history`, JSON.stringify(lightweightHistory));
     pushSyncToRemote({ history });
   }, [history, storagePrefix]);
 
   useEffect(() => {
-    localStorage.setItem(`${storagePrefix}_pinned_cards`, JSON.stringify(pinnedCards));
+    safeLocalStorageSet(`${storagePrefix}_pinned_cards`, JSON.stringify(pinnedCards));
     pushSyncToRemote({ pinnedCards });
   }, [pinnedCards, storagePrefix]);
 
   useEffect(() => {
-    localStorage.setItem(`${storagePrefix}_saved_presets`, JSON.stringify(savedPresets));
-    localStorage.setItem("qs_saved_db_connections", JSON.stringify(savedPresets));
+    safeLocalStorageSet(`${storagePrefix}_saved_presets`, JSON.stringify(savedPresets));
+    safeLocalStorageSet("qs_saved_db_connections", JSON.stringify(savedPresets));
     pushSyncToRemote({ savedPresets });
   }, [savedPresets, storagePrefix]);
 
@@ -606,8 +664,8 @@ export const ChatProvider: React.FC<{
     setSavedPresets((prev) => {
       const filtered = prev.filter((p) => p.id !== preset.id && p.name !== preset.name);
       const updated = [preset, ...filtered];
-      localStorage.setItem(`${storagePrefix}_saved_presets`, JSON.stringify(updated));
-      localStorage.setItem("qs_saved_db_connections", JSON.stringify(updated));
+      safeLocalStorageSet(`${storagePrefix}_saved_presets`, JSON.stringify(updated));
+      safeLocalStorageSet("qs_saved_db_connections", JSON.stringify(updated));
       pushSyncToRemote({ savedPresets: updated });
       return updated;
     });
@@ -616,8 +674,8 @@ export const ChatProvider: React.FC<{
   const deleteDbPreset = (id: string) => {
     setSavedPresets((prev) => {
       const updated = prev.filter((p) => p.id !== id);
-      localStorage.setItem(`${storagePrefix}_saved_presets`, JSON.stringify(updated));
-      localStorage.setItem("qs_saved_db_connections", JSON.stringify(updated));
+      safeLocalStorageSet(`${storagePrefix}_saved_presets`, JSON.stringify(updated));
+      safeLocalStorageSet("qs_saved_db_connections", JSON.stringify(updated));
       pushSyncToRemote({ savedPresets: updated });
       return updated;
     });
