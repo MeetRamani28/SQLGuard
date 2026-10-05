@@ -1,4 +1,5 @@
 import json
+import time
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from app.core.config import settings
@@ -6,6 +7,7 @@ from app.agent.state import AgentState
 from app.core.schema_rag import get_relevant_schema
 from app.core.db_factory import get_db_connection as factory_get_db_connection
 from app.security.ast_guard import validate_read_only_sql, mask_pii_data, detect_data_anomalies
+from app.core.telemetry import record_llm_span
 
 _LLM_INSTANCE = None
 
@@ -65,8 +67,10 @@ DATABASE SCHEMA:
     ])
 
     chain = prompt | get_llm()
+    start_t = time.time()
     try:
         response = chain.invoke({"schema": schema, "question": state["question"]})
+        duration_ms = (time.time() - start_t) * 1000
         clean_res = response.content.strip()
         
         if clean_res.startswith("```"):
@@ -77,6 +81,19 @@ DATABASE SCHEMA:
             clean_res = clean_res[:-3].strip()
 
         parsed = json.loads(clean_res)
+        
+        token_usage = getattr(response, "response_metadata", {}).get("token_usage", {})
+        record_llm_span(
+            name="sqlguard_generate_sql",
+            prompt_input=state["question"],
+            output_text=clean_res,
+            model=getattr(settings, "MODEL_NAME", "openai/gpt-oss-20b"),
+            provider="groq",
+            prompt_tokens=token_usage.get("prompt_tokens", 0),
+            completion_tokens=token_usage.get("completion_tokens", 0),
+            duration_ms=duration_ms,
+        )
+
         return {
             "schema": schema,
             "sql_query": parsed.get("sql_query", "").strip(),
@@ -84,7 +101,16 @@ DATABASE SCHEMA:
             "retry_count": 0
         }
     except Exception:
+        duration_ms = (time.time() - start_t) * 1000
         raw_output = getattr(response, "content", "").strip() if 'response' in locals() else ""
+        record_llm_span(
+            name="sqlguard_generate_sql_fallback",
+            prompt_input=state["question"],
+            output_text=raw_output,
+            model=getattr(settings, "MODEL_NAME", "openai/gpt-oss-20b"),
+            provider="groq",
+            duration_ms=duration_ms,
+        )
         return {
             "schema": schema,
             "sql_query": raw_output,
@@ -190,12 +216,26 @@ Corrected SQL Query:""")
     ])
 
     chain = prompt | get_llm()
+    start_t = time.time()
     response = chain.invoke({
         "schema": state["schema"],
         "question": state["question"],
         "sql_query": state["sql_query"],
         "error_trace": state["error_trace"]
     })
+    duration_ms = (time.time() - start_t) * 1000
+    token_usage = getattr(response, "response_metadata", {}).get("token_usage", {})
+    record_llm_span(
+        name="sqlguard_self_correct_sql",
+        prompt_input=f"Question: {state['question']} | Error: {state['error_trace']}",
+        output_text=response.content.strip(),
+        model=getattr(settings, "MODEL_NAME", "openai/gpt-oss-20b"),
+        provider="groq",
+        prompt_tokens=token_usage.get("prompt_tokens", 0),
+        completion_tokens=token_usage.get("completion_tokens", 0),
+        duration_ms=duration_ms,
+        metadata={"retry_count": current_retry},
+    )
 
     return {
         "sql_query": response.content.strip(),
