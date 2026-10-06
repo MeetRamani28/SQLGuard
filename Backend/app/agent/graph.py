@@ -17,12 +17,13 @@ def route_after_validation(state: AgentState) -> str:
         return "execute_sql"
     
     error_trace = state.get("error_trace") or ""
-    # Hard stop on security violations - never self-correct destructive operations
-    if "SECURITY ERROR" in error_trace or "Forbidden" in error_trace or "FORBIDDEN" in error_trace:
+    sql_query = state.get("sql_query") or ""
+    # Hard stop on security violations or schema errors - never loop 3 times
+    if "SECURITY ERROR" in error_trace or "SCHEMA ERROR" in error_trace or "Forbidden" in error_trace or "FORBIDDEN" in error_trace or sql_query.startswith("FORBIDDEN"):
         return "end"
 
     retry_count = state.get("retry_count", 0)
-    max_retries = state.get("max_retries", 3)
+    max_retries = 1 # Fast sub-5s latency target: max 1 retry
     
     if retry_count < max_retries:
         return "self_correct"
@@ -41,7 +42,7 @@ def route_after_execution(state: AgentState) -> str:
         return "chart_mapping"
     
     retry_count = state.get("retry_count", 0)
-    max_retries = state.get("max_retries", 3)
+    max_retries = 1 # Fast sub-5s latency target: max 1 retry
     
     if retry_count < max_retries:
         return "self_correct"

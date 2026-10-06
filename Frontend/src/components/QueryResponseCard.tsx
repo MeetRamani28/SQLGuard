@@ -232,11 +232,16 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
     }
   };
 
-  const isForbidden =
-    sqlQuery === "FORBIDDEN" ||
-    sqlQuery?.startsWith("FORBIDDEN") ||
-    errorTrace?.includes("SECURITY ERROR") ||
-    explanation?.toLowerCase().includes("forbidden");
+  const isSecurityError =
+    sqlQuery === "FORBIDDEN_SECURITY_ERROR" ||
+    sqlQuery === "FORBIDDEN_OPERATION" ||
+    errorTrace?.includes("SECURITY ERROR");
+
+  const isSchemaError =
+    sqlQuery === "FORBIDDEN_SCHEMA_ERROR" ||
+    errorTrace?.includes("SCHEMA ERROR");
+
+  const isForbidden = isSecurityError || isSchemaError || sqlQuery === "FORBIDDEN" || sqlQuery?.startsWith("FORBIDDEN");
 
   const results = queryResult || [];
   const keys = useMemo(() => (results.length > 0 ? Object.keys(results[0]) : []), [results]);
@@ -799,8 +804,8 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
         </div>
       )}
 
-      {/* 3. SECURITY ALERT OR SYNTHESIZED SQL QUERY */}
-      {isForbidden ? (
+      {/* 3. SECURITY ALERT, SCHEMA NOTICE, OR SYNTHESIZED SQL QUERY */}
+      {isSecurityError ? (
         <div className="p-4 bg-rose-50 border-2 border-rose-500 rounded-xl space-y-2 text-rose-700 text-xs shadow-md">
           <div className="flex items-center gap-2 text-sm font-bold text-rose-800">
             <Lock className="w-5 h-5 text-rose-600 shrink-0" />
@@ -808,6 +813,26 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
           </div>
           <p className="text-rose-700/90 font-mono text-xs leading-relaxed">
             Destructive operation (DELETE, DROP, UPDATE, INSERT, ALTER, or PRAGMA) detected and blocked. SQLGuard strictly permits read-only SELECT queries.
+          </p>
+        </div>
+      ) : isSchemaError ? (
+        <div className="p-4 bg-amber-50 border-2 border-amber-500 rounded-xl space-y-2 text-amber-800 text-xs shadow-md">
+          <div className="flex items-center gap-2 text-sm font-bold text-amber-900">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <span>DATABASE SCHEMA NOTICE</span>
+          </div>
+          <p className="text-amber-800/90 font-mono text-xs leading-relaxed">
+            {explanation || errorTrace || "The requested table, column, or entity does not exist in the connected database schema."}
+          </p>
+        </div>
+      ) : isForbidden ? (
+        <div className="p-4 bg-rose-50 border-2 border-rose-500 rounded-xl space-y-2 text-rose-700 text-xs shadow-md">
+          <div className="flex items-center gap-2 text-sm font-bold text-rose-800">
+            <Lock className="w-5 h-5 text-rose-600 shrink-0" />
+            <span>QUERY RESTRICTION NOTICE</span>
+          </div>
+          <p className="text-rose-700/90 font-mono text-xs leading-relaxed">
+            {explanation || errorTrace || "This operation is restricted or unavailable."}
           </p>
         </div>
       ) : (
