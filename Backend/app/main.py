@@ -1,4 +1,5 @@
 import json
+import re
 import time
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect
@@ -48,9 +49,14 @@ async def global_exception_handler(request: Request, exc: Exception):
     Description: Global exception handler preventing 502 Bad Gateway errors by capturing unhandled exceptions
     and returning formatted JSON error responses with CORS headers.
     """
+    origin = request.headers.get("origin", "*")
     return JSONResponse(
         status_code=500,
         content={"detail": f"Internal Server Error: {str(exc)}"},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        }
     )
 
 class DbConfigSchema(BaseModel):
