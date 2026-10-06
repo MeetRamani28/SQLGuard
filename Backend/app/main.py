@@ -448,16 +448,40 @@ async def translate_explanation_language(request: TranslateExplanationRequest):
     if cache_key in TRANSLATION_CACHE:
         return {"success": True, "translated_text": TRANSLATION_CACHE[cache_key], "target_language": target_lang}
 
-    # Fast-path instant pattern matching for common system insights (0ms latency)
-    match_retrieved = re.search(r'(?:Successfully\s+retrieved|Retrieved)\s+(\d+)\s+(?:rows|records)', exp_text, re.IGNORECASE)
-    if match_retrieved:
-        num = match_retrieved.group(1)
-        fast_res = f"{num} पंक्तियाँ सफलतापूर्वक प्राप्त हुईं।" if target_lang == "hi" else f"{num} પંક્તિઓ સફળતાપૂર્વક મેળવી."
+    exp_lower = exp_text.lower().strip()
+
+    # Fast-path pattern 1: "Selected all columns from the <table_name> table..."
+    match_sel = re.search(r'selected\s+all\s+columns\s+from\s+the\s+([a-zA-Z0-9_\-]+)\s+table', exp_lower)
+    if match_sel:
+        table_name = match_sel.group(1)
+        fast_res = f"ડેટા દર્શાવવા માટે {table_name} ટેબલમાંથી તમામ કોલમ પસંદ કરવામાં આવી." if target_lang == "gu" else f"डेटा प्रदर्शित करने के लिए {table_name} तालिका से सभी कॉलम चुने गए।"
         TRANSLATION_CACHE[cache_key] = fast_res
         return {"success": True, "translated_text": fast_res, "target_language": target_lang}
 
-    if "no data records" in exp_text.lower():
-        fast_res = "इस क्वेरी के लिए कोई डेटा रिकॉर्ड वापस नहीं आया।" if target_lang == "hi" else "આ ક્વેરી માટે કોઈ ડેટા રેકોર્ડ મળ્યો નથી."
+    # Fast-path pattern 2: "Retrieved N records..."
+    match_retrieved = re.search(r'(?:successfully\s+retrieved|retrieved)\s+(\d+)\s+(?:rows|records)', exp_lower)
+    if match_retrieved:
+        num = match_retrieved.group(1)
+        fast_res = f"ડેટાબેઝમાંથી {num} રેકોર્ડ્સ સફળતાપૂર્વક મેળવ્યા." if target_lang == "gu" else f"डेटाबेस से {num} रिकॉर्ड सफलतापूर्वक प्राप्त किए गए।"
+        TRANSLATION_CACHE[cache_key] = fast_res
+        return {"success": True, "translated_text": fast_res, "target_language": target_lang}
+
+    # Fast-path pattern 3: "Counted rows in the <table_name>..."
+    match_cnt = re.search(r'counted\s+rows\s+in\s+the\s+([a-zA-Z0-9_\-]+)\s+table', exp_lower)
+    if match_cnt:
+        table_name = match_cnt.group(1)
+        fast_res = f"{table_name} ટેબલમાં કૂલ રેકોર્ડ્સની સંખ્યા ગણવામાં આવી." if target_lang == "gu" else f"{table_name} तालिका में कुल रिकॉर्ड की संख्या गिनी गई।"
+        TRANSLATION_CACHE[cache_key] = fast_res
+        return {"success": True, "translated_text": fast_res, "target_language": target_lang}
+
+    # Fast-path pattern 4: Executed / Synthesized SELECT query
+    if "select query" in exp_lower:
+        fast_res = "રીડ-ઓન્લી SELECT ક્વેરી સફળતાપૂર્વક ચલાવવામાં આવી." if target_lang == "gu" else "रीड-ओनली SELECT क्वेरी सफलतापूर्वक चलाई गई।"
+        TRANSLATION_CACHE[cache_key] = fast_res
+        return {"success": True, "translated_text": fast_res, "target_language": target_lang}
+
+    if "no data records" in exp_lower:
+        fast_res = "આ ક્વેરી માટે કોઈ ડેટા રેકોર્ડ મળ્યો નથી." if target_lang == "gu" else "इस क्वेरी के लिए कोई डेटा रिकॉर्ड वापस नहीं आया।"
         TRANSLATION_CACHE[cache_key] = fast_res
         return {"success": True, "translated_text": fast_res, "target_language": target_lang}
 
@@ -466,7 +490,7 @@ async def translate_explanation_language(request: TranslateExplanationRequest):
 
     target_lang_name = "Gujarati (ગુજરાતી)" if target_lang == "gu" else "Hindi (हिंदी)"
     prompt = ChatPromptTemplate.from_messages([
-        ("system", f"You are a professional multilingual translator. Translate the following database business insight accurately into {target_lang_name}. Return ONLY the translated sentence without additional commentary."),
+        ("system", f"You are a professional multilingual translator. Translate the following database business insight accurately into {target_lang_name}. Return ONLY the translated sentence in script without additional commentary."),
         ("human", "{explanation}")
     ])
     chain = prompt | get_llm()
