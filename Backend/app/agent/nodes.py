@@ -320,7 +320,7 @@ CRITICAL RULES:
 1. Return ONLY the raw executable SQL query.
 2. DO NOT include markdown syntax like ```sql or explanations.
 3. Ensure table/column names match the schema exactly.
-4. STRICT SECURITY RULE: You MUST ONLY generate read-only SELECT queries. If the query cannot be fixed without modifying data, start with 'FORBIDDEN_SECURITY_ERROR'.
+4. READ-ONLY SECURITY: Always generate a valid read-only SELECT query. DO NOT output FORBIDDEN_SECURITY_ERROR unless the user explicitly requested data modification (DELETE, DROP, UPDATE, INSERT, ALTER).
 
 DATABASE SCHEMA:
 {schema}"""),

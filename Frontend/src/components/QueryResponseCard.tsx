@@ -235,13 +235,19 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
   const isSecurityError =
     sqlQuery === "FORBIDDEN_SECURITY_ERROR" ||
     sqlQuery === "FORBIDDEN_OPERATION" ||
-    errorTrace?.includes("SECURITY ERROR");
+    (Boolean(errorTrace) && errorTrace?.includes("SECURITY ERROR") && !errorTrace?.includes("Execution Error"));
 
   const isSchemaError =
     sqlQuery === "FORBIDDEN_SCHEMA_ERROR" ||
-    errorTrace?.includes("SCHEMA ERROR");
+    (Boolean(errorTrace) && errorTrace?.includes("SCHEMA ERROR"));
 
-  const isForbidden = isSecurityError || isSchemaError || sqlQuery === "FORBIDDEN" || sqlQuery?.startsWith("FORBIDDEN");
+  const isExecutionError =
+    Boolean(errorTrace) &&
+    !isSecurityError &&
+    !isSchemaError &&
+    (errorTrace?.includes("Database Execution Error") || errorTrace?.includes("Database Error"));
+
+  const isForbidden = (isSecurityError || isSchemaError || sqlQuery === "FORBIDDEN" || sqlQuery?.startsWith("FORBIDDEN")) && !isExecutionError;
 
   const results = queryResult || [];
   const keys = useMemo(() => (results.length > 0 ? Object.keys(results[0]) : []), [results]);
@@ -823,6 +829,16 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
           </div>
           <p className="text-amber-800/90 font-mono text-xs leading-relaxed">
             {explanation || errorTrace || "The requested table, column, or entity does not exist in the connected database schema."}
+          </p>
+        </div>
+      ) : isExecutionError ? (
+        <div className="p-4 bg-amber-50 border-2 border-amber-500 rounded-xl space-y-2 text-amber-800 text-xs shadow-md">
+          <div className="flex items-center gap-2 text-sm font-bold text-amber-900">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <span>DATABASE EXECUTION NOTICE</span>
+          </div>
+          <p className="text-amber-800/90 font-mono text-xs leading-relaxed">
+            {errorTrace || "Database query execution encountered a runtime error."}
           </p>
         </div>
       ) : isForbidden ? (

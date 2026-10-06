@@ -34,20 +34,15 @@ def route_after_validation(state: AgentState) -> str:
 def route_after_execution(state: AgentState) -> str:
     """
     Description: Decision logic after SQL Execution Node.
-    Usecase: Routes to chart_mapping if query succeeded, or self_correct_node/END if DB error occurred.
+    Usecase: Routes to chart_mapping if query succeeded, or END if DB execution error occurred.
     """
     error_trace = state.get("error_trace")
     
     if not error_trace:
         return "chart_mapping"
     
-    retry_count = state.get("retry_count", 0)
-    max_retries = 1 # Fast sub-5s latency target: max 1 retry
-    
-    if retry_count < max_retries:
-        return "self_correct"
-    else:
-        return "end"
+    # Fast sub-5s latency: Return execution error directly to user without retrying
+    return "end"
 
 def build_query_sense_graph():
     """
