@@ -103,16 +103,30 @@ DATABASE SCHEMA:
 
         parsed = json.loads(clean_res)
         
-        token_usage = getattr(response, "response_metadata", {}).get("token_usage", {})
+        usage_meta = getattr(response, "usage_metadata", None) or {}
+        resp_meta = getattr(response, "response_metadata", None) or {}
+        token_usage = resp_meta.get("token_usage") or resp_meta.get("usage") or {}
+
+        p_tokens = (
+            token_usage.get("prompt_tokens")
+            or usage_meta.get("input_tokens")
+            or max(1, (len(state["question"]) + len(schema)) // 4)
+        )
+        c_tokens = (
+            token_usage.get("completion_tokens")
+            or usage_meta.get("output_tokens")
+            or max(1, len(clean_res) // 4)
+        )
+
         record_llm_span(
             name="sqlguard_generate_sql",
             prompt_input=state["question"],
             output_text=clean_res,
             model=getattr(settings, "MODEL_NAME", "openai/gpt-oss-20b"),
             provider="groq",
-            prompt_tokens=token_usage.get("prompt_tokens", 0),
-            completion_tokens=token_usage.get("completion_tokens", 0),
-            duration_ms=duration_ms,
+            prompt_tokens=int(p_tokens),
+            completion_tokens=int(c_tokens),
+            duration_ms=max(1.0, duration_ms),
             trace_id=trace_id,
         )
 

@@ -55,14 +55,18 @@ def record_llm_span(
         if not client:
             return
 
-        with client.span(name=name, type="llm", trace_id=trace_id, metadata=metadata) as span:
+        with client.span(name=name, type="llm", trace_id=trace_id, metadata=metadata, model=model, provider=provider) as span:
             span.input = str(prompt_input) if prompt_input else ""
             span.output = str(output_text) if output_text else ""
-            span.model = model
-            span.provider = provider
-            span.prompt_tokens = prompt_tokens
-            span.completion_tokens = completion_tokens
-            span.duration_ms = duration_ms
+            if hasattr(span, "set_tokens"):
+                span.set_tokens(prompt=int(prompt_tokens), completion=int(completion_tokens))
+            else:
+                span.prompt_tokens = int(prompt_tokens)
+                span.completion_tokens = int(completion_tokens)
+            if hasattr(span, "set_duration"):
+                span.set_duration(max(1.0, float(duration_ms)))
+            else:
+                span.duration_ms = max(1.0, float(duration_ms))
             span.status = status
             span.error_message = error_message
     except Exception as e:
@@ -89,7 +93,10 @@ def record_span(
         with client.span(name=name, type=span_type, trace_id=trace_id, metadata=metadata) as span:
             span.input = str(input_text) if input_text is not None else ""
             span.output = str(output_text) if output_text is not None else ""
-            span.duration_ms = duration_ms
+            if hasattr(span, "set_duration"):
+                span.set_duration(max(1.0, float(duration_ms)))
+            else:
+                span.duration_ms = max(1.0, float(duration_ms))
             span.status = status
             span.error_message = error_message
     except Exception as e:
