@@ -7,7 +7,7 @@ from app.agent.state import AgentState
 from app.core.schema_rag import get_relevant_schema
 from app.core.db_factory import get_db_connection as factory_get_db_connection
 from app.security.ast_guard import validate_read_only_sql, mask_pii_data, detect_data_anomalies
-from app.core.telemetry import record_llm_span
+from app.core.telemetry import record_llm_span, record_span
 
 _LLM_INSTANCE = None
 
@@ -29,8 +29,22 @@ def generate_sql_node(state: AgentState) -> dict:
                  plus a 1-sentence breakdown explaining the SQL logic.
     Usecase: Initial step to convert text into structured JSON containing SQL + Explanation.
     """
+    trace_id = state.get("trace_id")
     db_config = state.get("db_config")
+
+    rag_start = time.time()
     schema = get_relevant_schema(state["question"], db_config=db_config, top_k=3)
+    rag_duration = (time.time() - rag_start) * 1000
+    record_span(
+        name="sqlguard_schema_retrieval",
+        span_type="retrieval",
+        input_text=state["question"],
+        output_text=f"Retrieved schema context ({len(schema)} chars)",
+        duration_ms=rag_duration,
+        trace_id=trace_id,
+        metadata={"top_k": 3}
+    )
+
     chat_history = state.get("chat_history") or []
     
     history_str = ""
@@ -99,6 +113,7 @@ DATABASE SCHEMA:
             prompt_tokens=token_usage.get("prompt_tokens", 0),
             completion_tokens=token_usage.get("completion_tokens", 0),
             duration_ms=duration_ms,
+            trace_id=trace_id,
         )
 
         return {
@@ -117,6 +132,7 @@ DATABASE SCHEMA:
             model=getattr(settings, "MODEL_NAME", "openai/gpt-oss-20b"),
             provider="groq",
             duration_ms=duration_ms,
+            trace_id=trace_id,
         )
         return {
             "schema": schema,
@@ -131,16 +147,42 @@ def validate_sql_node(state: AgentState) -> dict:
                  and intercepts schema or security error flags.
     Usecase: Enforces Database Read-Only Guardrails before hitting the DB engine.
     """
+    trace_id = state.get("trace_id")
+    val_start = time.time()
     sql = state.get("sql_query", "").strip()
     explanation = state.get("explanation", "")
 
     if sql.startswith("FORBIDDEN_SCHEMA_ERROR"):
+        val_duration = (time.time() - val_start) * 1000
+        record_span(
+            name="sqlguard_ast_guard_validation",
+            span_type="tool",
+            input_text=sql,
+            output_text=f"SCHEMA ERROR: {explanation}",
+            duration_ms=val_duration,
+            trace_id=trace_id,
+            status="error",
+            error_message="Requested tables or columns do not exist.",
+            metadata={"status": "rejected_schema"}
+        )
         return {
             "is_valid_sql": False,
             "error_trace": f"SCHEMA ERROR: {explanation if explanation else 'Requested tables or columns do not exist in this database.'}"
         }
 
     if sql.startswith("FORBIDDEN_SECURITY_ERROR") or sql.startswith("FORBIDDEN_OPERATION"):
+        val_duration = (time.time() - val_start) * 1000
+        record_span(
+            name="sqlguard_ast_guard_validation",
+            span_type="tool",
+            input_text=sql,
+            output_text=f"SECURITY ERROR: {explanation}",
+            duration_ms=val_duration,
+            trace_id=trace_id,
+            status="error",
+            error_message="Destructive operations forbidden.",
+            metadata={"status": "rejected_security"}
+        )
         return {
             "is_valid_sql": False,
             "error_trace": f"SECURITY ERROR: {explanation if explanation else 'Destructive operations are strictly forbidden.'}"
@@ -150,14 +192,36 @@ def validate_sql_node(state: AgentState) -> dict:
     _, dialect = factory_get_db_connection(db_config)
     read_dialect = "mysql" if dialect in ("mysql", "mongodb") else dialect
     is_valid, result = validate_read_only_sql(sql, dialect=read_dialect)
+    val_duration = (time.time() - val_start) * 1000
     
     if is_valid:
+        record_span(
+            name="sqlguard_ast_guard_validation",
+            span_type="tool",
+            input_text=sql,
+            output_text="PASSED: Read-only AST verified",
+            duration_ms=val_duration,
+            trace_id=trace_id,
+            status="ok",
+            metadata={"dialect": read_dialect, "is_valid": True}
+        )
         return {
             "is_valid_sql": True,
             "sql_query": result,  
             "error_trace": None
         }
     else:
+        record_span(
+            name="sqlguard_ast_guard_validation",
+            span_type="tool",
+            input_text=sql,
+            output_text=f"BLOCKED: {result}",
+            duration_ms=val_duration,
+            trace_id=trace_id,
+            status="error",
+            error_message=result,
+            metadata={"dialect": read_dialect, "is_valid": False}
+        )
         return {
             "is_valid_sql": False,
             "sql_query": "FORBIDDEN",
@@ -169,6 +233,8 @@ def execute_sql_node(state: AgentState) -> dict:
     Description: Executes validated SQL query against target database (SQLite or PostgreSQL).
     Usecase: Retrieves data rows or catches database runtime errors, applying PII data masking.
     """
+    trace_id = state.get("trace_id")
+    exec_start = time.time()
     try:
         db_config = state.get("db_config")
         conn, dialect = factory_get_db_connection(db_config)
@@ -181,6 +247,18 @@ def execute_sql_node(state: AgentState) -> dict:
         dict_results = [dict(row) for row in rows]
         masked_results = mask_pii_data(dict_results)
         anomalies = detect_data_anomalies(dict_results)
+        exec_duration = (time.time() - exec_start) * 1000
+
+        record_span(
+            name="sqlguard_execute_db_query",
+            span_type="tool",
+            input_text=state.get("sql_query", ""),
+            output_text=f"Retrieved {len(masked_results)} rows. Anomalies: {len(anomalies)}",
+            duration_ms=exec_duration,
+            trace_id=trace_id,
+            status="ok",
+            metadata={"row_count": len(masked_results), "anomalies_count": len(anomalies), "dialect": dialect}
+        )
         
         return {
             "query_result": masked_results,
@@ -188,6 +266,17 @@ def execute_sql_node(state: AgentState) -> dict:
             "error_trace": None
         }
     except Exception as e:
+        exec_duration = (time.time() - exec_start) * 1000
+        record_span(
+            name="sqlguard_execute_db_query",
+            span_type="tool",
+            input_text=state.get("sql_query", ""),
+            output_text="Database execution failed",
+            duration_ms=exec_duration,
+            trace_id=trace_id,
+            status="error",
+            error_message=str(e),
+        )
         return {
             "query_result": None,
             "error_trace": f"Database Execution Error: {str(e)}"
@@ -198,6 +287,7 @@ def self_correct_node(state: AgentState) -> dict:
     Description: Takes failed SQL query + error trace and re-prompts LLM to fix the query.
     Usecase: Autonomous self-healing loop for SQL syntax or schema mismatch errors.
     """
+    trace_id = state.get("trace_id")
     current_retry = state.get("retry_count", 0) + 1
     
     prompt = ChatPromptTemplate.from_messages([
@@ -241,6 +331,7 @@ Corrected SQL Query:""")
         prompt_tokens=token_usage.get("prompt_tokens", 0),
         completion_tokens=token_usage.get("completion_tokens", 0),
         duration_ms=duration_ms,
+        trace_id=trace_id,
         metadata={"retry_count": current_retry},
     )
 
@@ -254,11 +345,22 @@ def chart_mapping_node(state: AgentState) -> dict:
     Description: High-speed deterministic data analyzer selecting optimal chart type and executive summary in 0ms.
     Usecase: Eliminates 3-second LLM latency bottleneck for sub-2-second query responses.
     """
+    trace_id = state.get("trace_id")
+    chart_start = time.time()
     results = state.get("query_result", [])
     explanation = state.get("explanation")
     question = state.get("question", "")
 
     if not results:
+        record_span(
+            name="sqlguard_chart_mapping_summary",
+            span_type="tool",
+            input_text="No query results",
+            output_text="Selected chart: none",
+            duration_ms=(time.time() - chart_start) * 1000,
+            trace_id=trace_id,
+            metadata={"chart_type": "none"}
+        )
         return {
             "chart_type": "none",
             "explanation": explanation or "No data records found for this query.",
@@ -311,6 +413,17 @@ def chart_mapping_node(state: AgentState) -> dict:
             max_v = max(num_vals)
             min_v = min(num_vals)
             summary_bullets.append(f"Metric '{target_num}' ranges from {min_v:,} to {max_v:,}.")
+
+    chart_duration = (time.time() - chart_start) * 1000
+    record_span(
+        name="sqlguard_chart_mapping_summary",
+        span_type="tool",
+        input_text=f"Columns: {len(keys)}, Rows: {row_count}",
+        output_text=f"Selected chart: {chart_type} | Summary bullets: {len(summary_bullets)}",
+        duration_ms=chart_duration,
+        trace_id=trace_id,
+        metadata={"chart_type": chart_type, "rows": row_count, "columns": len(keys)}
+    )
 
     return {
         "chart_type": chart_type,

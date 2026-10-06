@@ -760,12 +760,17 @@ async def process_analytics_query(
             cached_result["execution_time_ms"] = 3
             return QueryResponse(**cached_result)
 
+        import uuid
+        from app.core.telemetry import flush_telemetry
+        trace_id = f"trace_{uuid.uuid4().hex}"
+
         initial_state = {
             "question": sanitized_q,
             "db_config": db_config_dict,
             "chat_history": request.chat_history or [],
             "retry_count": 0,
-            "max_retries": 3
+            "max_retries": 3,
+            "trace_id": trace_id,
         }
 
         # Broadcast stage: start
@@ -776,6 +781,7 @@ async def process_analytics_query(
         )
 
         final_state = await query_sense_agent.ainvoke(initial_state)
+        flush_telemetry()
         elapsed_ms = int((time.time() - start_time) * 1000)
 
         # Broadcast stage: complete

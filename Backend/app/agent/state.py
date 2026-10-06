@@ -19,3 +19,4 @@ class AgentState(TypedDict):
     chat_history: Optional[List[Dict[str, str]]]
     executive_summary: Optional[List[str]]
     anomalies: Optional[List[Dict[str, Any]]]
+    trace_id: Optional[str]

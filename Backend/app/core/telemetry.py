@@ -67,3 +67,41 @@ def record_llm_span(
             span.error_message = error_message
     except Exception as e:
         logger.debug("Failed to record TokenTrail telemetry span: %s", e)
+
+
+def record_span(
+    name: str,
+    span_type: str = "tool",
+    input_text: Optional[str] = None,
+    output_text: Optional[str] = None,
+    duration_ms: float = 0.0,
+    trace_id: Optional[str] = None,
+    status: str = "ok",
+    error_message: Optional[str] = None,
+    metadata: Optional[dict[str, Any]] = None,
+) -> None:
+    """Safely record a non-LLM span (tool, retrieval, AST guard, db query) to TokenTrail."""
+    try:
+        client = get_telemetry_client()
+        if not client:
+            return
+
+        with client.span(name=name, type=span_type, trace_id=trace_id, metadata=metadata) as span:
+            span.input = str(input_text) if input_text is not None else ""
+            span.output = str(output_text) if output_text is not None else ""
+            span.duration_ms = duration_ms
+            span.status = status
+            span.error_message = error_message
+    except Exception as e:
+        logger.debug("Failed to record TokenTrail telemetry generic span: %s", e)
+
+
+def flush_telemetry(timeout: float = 2.0) -> None:
+    """Flush pending telemetry spans safely."""
+    try:
+        client = get_telemetry_client()
+        if client:
+            client.flush(timeout=timeout)
+    except Exception as e:
+        logger.debug("Failed to flush TokenTrail telemetry: %s", e)
+
