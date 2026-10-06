@@ -15,9 +15,7 @@ def get_llm():
     """Returns ChatGroq singleton instance with current fast model configuration."""
     global _LLM_INSTANCE
     if _LLM_INSTANCE is None:
-        model = settings.MODEL_NAME
-        if not model or model == "openai/gpt-oss-20b":
-            model = "llama-3.3-70b-versatile"
+        model = getattr(settings, "MODEL_NAME", "openai/gpt-oss-20b") or "openai/gpt-oss-20b"
         _LLM_INSTANCE = ChatGroq(
             groq_api_key=settings.GROQ_API_KEY,
             model_name=model,
@@ -75,7 +73,7 @@ MULTILINGUAL & SCHEMA MATCHING (CRITICAL):
   * "specialization list", "specializations", "doctors", "specialist" -> `specializations` table
   * "appointments", "doctor free", "schedule", "bookings" -> `appointments` / `appointmentmedicalrecords` / `specializations` table
   * "contacts", "inquiries", "messages" -> `contacts` table
-  * "users", "patients", "accounts" -> `users` table
+  * "users", "patients", "accounts", "customers" -> `users` / `customers` table
 {history_str}
 CRITICAL RULES:
 1. Output MUST be a valid JSON object with keys: "sql_query" and "sql_explanation".
@@ -142,12 +140,32 @@ DATABASE SCHEMA:
             "retry_count": 0
         }
     except Exception:
+        import re
         duration_ms = (time.time() - start_t) * 1000
         raw_output = getattr(response, "content", "").strip() if 'response' in locals() else ""
+
+        sql_match = re.search(r'SELECT\s+.*?(?:;|$)', raw_output, re.IGNORECASE | re.DOTALL)
+        fallback_sql = sql_match.group(0).strip() if sql_match else ""
+
+        if not fallback_sql:
+            q_lower = state["question"].lower()
+            table_match = re.search(r'(?:from|of|in|table)\s+([a-zA-Z0-9_\-]+)', q_lower)
+            if table_match:
+                t_name = table_match.group(1).strip()
+                fallback_sql = f"SELECT * FROM {t_name} LIMIT 10;"
+            elif "user" in q_lower or "customer" in q_lower:
+                fallback_sql = "SELECT * FROM users LIMIT 10;" if "users" in schema else "SELECT * FROM customers LIMIT 10;"
+            elif "specialization" in q_lower or "doctor" in q_lower:
+                fallback_sql = "SELECT * FROM specializations LIMIT 10;"
+            elif "contact" in q_lower:
+                fallback_sql = "SELECT * FROM contacts LIMIT 10;"
+            elif "appointment" in q_lower:
+                fallback_sql = "SELECT * FROM appointments LIMIT 10;"
+
         record_llm_span(
             name="sqlguard_generate_sql_fallback",
             prompt_input=state["question"],
-            output_text=raw_output,
+            output_text=raw_output or fallback_sql,
             model=getattr(settings, "MODEL_NAME", "openai/gpt-oss-20b"),
             provider="groq",
             duration_ms=duration_ms,
@@ -155,8 +173,8 @@ DATABASE SCHEMA:
         )
         return {
             "schema": schema,
-            "sql_query": raw_output,
-            "explanation": "Synthesized SELECT query.",
+            "sql_query": fallback_sql,
+            "explanation": "Synthesized read-only SELECT query.",
             "retry_count": 0
         }
 

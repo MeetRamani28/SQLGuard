@@ -23,7 +23,7 @@ def validate_read_only_sql(sql_query: str, dialect: str = "sqlite") -> tuple[boo
         cleaned_sql = cleaned_sql[:-3].strip()
 
     if not cleaned_sql:
-        return False, "SECURITY ERROR: Empty SQL query string provided."
+        return False, "QUERY ERROR: Empty or unparseable SQL query string provided."
 
     try:
         # Parse expressions using target SQL dialect (sqlite or postgres)
