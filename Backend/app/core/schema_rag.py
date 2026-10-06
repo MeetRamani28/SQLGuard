@@ -48,6 +48,14 @@ def get_relevant_schema(question: str, db_config: Optional[dict] = None, top_k: 
     Usecase: Keeps prompt token count low and improves Text-to-SQL generation accuracy.
     """
     try:
+        full_schema_text = get_database_schema(db_config)
+        table_count = len([l for l in full_schema_text.split("\n") if l.startswith("- Table '")])
+
+        # Always return full schema text if database has 12 or fewer tables
+        # This eliminates ChromaDB vector embedding overhead for standard database schemas (1-12 tables)
+        if table_count <= 12:
+            return full_schema_text
+
         index_schema_in_vectorstore(db_config)
         collection = get_vectorstore_collection()
 
@@ -62,11 +70,7 @@ def get_relevant_schema(question: str, db_config: Optional[dict] = None, top_k: 
                 for meta in meta_list:
                     relevant_tables.add(meta["table_name"])
 
-        full_schema_text = get_database_schema(db_config)
-        # Always return full schema text if database has 12 or fewer tables
-        # This guarantees 100% table context availability for multilingual queries (English, Gujarati, Hindi)
-        table_count = len([l for l in full_schema_text.split("\n") if l.startswith("- Table '")])
-        if table_count <= 12 or not relevant_tables:
+        if not relevant_tables:
             return full_schema_text
 
         filtered_lines = []

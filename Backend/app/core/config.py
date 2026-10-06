@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     
     # LLM Settings
     GROQ_API_KEY: str = ""
-    MODEL_NAME: str = "openai/gpt-oss-20b"
+    MODEL_NAME: str = "llama-3.3-70b-versatile"
     
     # Database Settings
     SQLITE_DB_PATH: str = os.path.join(BASE_DIR, "sqlguard_dev.db")

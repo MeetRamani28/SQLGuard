@@ -1,11 +1,22 @@
 import sqlite3
+import time
+import json
 from app.core.db_factory import get_db_connection as factory_get_db_connection
+
+_SCHEMA_INSPECTION_CACHE = {}
 
 def get_database_schema(db_config: dict = None) -> str:
     """
-    Description: Introspects connected database (SQLite, PostgreSQL, MySQL, or MongoDB) dynamically.
-    Usecase: Extracts table/collection structure, column/field types, and foreign key relations for LLM context.
+    Description: Introspects connected database (SQLite, PostgreSQL, MySQL, or MongoDB) dynamically with 30s TTL cache.
+    Usecase: Extracts table/collection structure, column/field types, and foreign key relations for LLM context without redundant DB roundtrips.
     """
+    cache_key = json.dumps(db_config or {}, sort_keys=True)
+    now = time.time()
+    if cache_key in _SCHEMA_INSPECTION_CACHE:
+        cached_schema, cached_time = _SCHEMA_INSPECTION_CACHE[cache_key]
+        if now - cached_time < 30.0:
+            return cached_schema
+
     conn, dialect = factory_get_db_connection(db_config)
     cursor = conn.cursor()
 
@@ -193,4 +204,5 @@ def get_database_schema(db_config: dict = None) -> str:
             for fk in fk_data:
                 schema_str += f"- {fk['foreign_table']}.{fk['foreign_column']} references {fk['primary_table']}.{fk['primary_column']}\n"
 
+        _SCHEMA_INSPECTION_CACHE[cache_key] = (schema_str, time.time())
         return schema_str

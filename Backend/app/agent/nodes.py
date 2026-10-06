@@ -12,14 +12,19 @@ from app.core.telemetry import record_llm_span, record_span
 _LLM_INSTANCE = None
 
 def get_llm():
-    """Returns ChatGroq singleton instance with current model configuration."""
+    """Returns ChatGroq singleton instance with current fast model configuration."""
     global _LLM_INSTANCE
     if _LLM_INSTANCE is None:
+        model = settings.MODEL_NAME
+        if not model or model == "openai/gpt-oss-20b":
+            model = "llama-3.3-70b-versatile"
         _LLM_INSTANCE = ChatGroq(
             groq_api_key=settings.GROQ_API_KEY,
-            model_name=settings.MODEL_NAME,
+            model_name=model,
             temperature=0.0,
-            max_tokens=250
+            max_tokens=250,
+            request_timeout=8.0,
+            max_retries=1
         )
     return _LLM_INSTANCE
 
