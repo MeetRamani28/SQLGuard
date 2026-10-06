@@ -257,12 +257,24 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
     const allKeys = Object.keys(results[0]);
 
+    const isIdKey = (k: string) =>
+      k.toLowerCase() === "id" ||
+      k.toLowerCase().endsWith("_id") ||
+      k.toLowerCase().endsWith("id") ||
+      k.toLowerCase() === "_id";
+
     const stringKeys = allKeys.filter((key) =>
       results.some((row) => {
         const val = row[key];
         return typeof val === "string" && isNaN(Number(val));
       })
     );
+
+    const nonIdStringKeys = stringKeys.filter((k) => !isIdKey(k));
+    const priorityKeyNames = ["name", "title", "label", "category", "specialization", "type", "status", "department", "role", "city", "country", "month", "year", "date"];
+    const priorityMatch = nonIdStringKeys.find((k) => priorityKeyNames.includes(k.toLowerCase()));
+
+    const label = priorityMatch || (nonIdStringKeys.length > 0 ? nonIdStringKeys[0] : stringKeys[0] || allKeys[0] || "");
 
     const numKeys = allKeys.filter((key) =>
       results.some((row) => {
@@ -272,11 +284,6 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
         return typeof val === "number" || (!isNaN(Number(val)) && String(val).trim() !== "");
       })
     );
-
-    const label = stringKeys.length > 0 ? stringKeys[0] : allKeys[0] || "";
-
-    const isIdKey = (k: string) =>
-      k.toLowerCase() === "id" || k.toLowerCase().endsWith("_id") || k.toLowerCase().endsWith("id");
 
     let validNumeric = numKeys;
     if (validNumeric.includes(label) && validNumeric.length > 1) {
@@ -288,7 +295,7 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
     return {
       labelKey: label,
-      numericKeys: prioritizedNumeric.length > 0 ? prioritizedNumeric : allKeys.slice(1),
+      numericKeys: prioritizedNumeric.length > 0 ? prioritizedNumeric : ["Count"],
     };
   }, [results]);
 
@@ -303,6 +310,15 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
 
   const sanitizedChartData = useMemo(() => {
     if (!results || results.length === 0) return [];
+    
+    const labelCounts: Record<string, number> = {};
+    if (numericKeys.length === 1 && numericKeys[0] === "Count") {
+      results.forEach((row: any) => {
+        const lbl = String(row[labelKey] || "Item");
+        labelCounts[lbl] = (labelCounts[lbl] || 0) + 1;
+      });
+    }
+
     return results.map((row: any) => {
       const cleanRow: Record<string, any> = {};
       Object.keys(row).forEach((key) => {
@@ -318,9 +334,15 @@ export const QueryResponseCard: React.FC<QueryResponseCardProps> = ({ data: init
           cleanRow[key] = val;
         }
       });
+
+      if (numericKeys.includes("Count")) {
+        const lbl = String(row[labelKey] || "Item");
+        cleanRow["Count"] = labelCounts[lbl] || 1;
+      }
+
       return cleanRow;
     });
-  }, [results]);
+  }, [results, numericKeys, labelKey]);
 
   const hasValidPieMetrics = useMemo(() => {
     if (!sanitizedChartData || sanitizedChartData.length === 0 || !activeMetricKey) return false;
