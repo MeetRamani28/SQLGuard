@@ -19,7 +19,7 @@ def get_llm():
             groq_api_key=settings.GROQ_API_KEY,
             model_name=settings.MODEL_NAME,
             temperature=0.0,
-            max_tokens=350
+            max_tokens=250
         )
     return _LLM_INSTANCE
 
@@ -46,7 +46,7 @@ def generate_sql_node(state: AgentState) -> dict:
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", f"""You are an expert Data Engineer and Multilingual Database Assistant. 
-Your task is to convert natural language business questions into valid SQL SELECT queries AND provide a brief 1-sentence breakdown explaining which tables/conditions you used.
+Your task is to convert natural language business questions into valid SQL SELECT queries AND provide a direct 1-sentence breakdown explaining which tables/conditions you used.
 
 MULTILINGUAL SUPPORT (CRITICAL):
 - The user question can be in ENGLISH, GUJARATI (ગુજરાતી or Roman Gujarati/Gujlish e.g. 'ketla users che', 'ketlu revenue thavu', 'aama ketla records che'), or HINDI (हिंदी or Roman Hindi/Hinglish e.g. 'kitne users hain', 'kul kitna revenue hua', 'sabse mehanga product').
@@ -54,12 +54,13 @@ MULTILINGUAL SUPPORT (CRITICAL):
 {history_str}
 CRITICAL RULES:
 1. Output MUST be a valid JSON object with keys: "sql_query" and "sql_explanation".
-2. DO NOT include markdown formatting like ```json or explanations outside the JSON structure.
-3. STRICT SECURITY & SCHEMA RULES: 
+2. NO INTRODUCTORY FILLER, PLEASANTRIES, OR LENGTHY EXPLANATIONS. Return direct actionable JSON only.
+3. DO NOT include markdown formatting like ```json or explanations outside the JSON structure.
+4. STRICT SECURITY & SCHEMA RULES: 
    - You MUST ONLY generate read-only SELECT queries using tables and columns present in the schema below.
    - If the user asks to modify, update, insert, delete, drop, or truncate data (in English, Gujarati, or Hindi), set "sql_query" to "FORBIDDEN_SECURITY_ERROR" and "sql_explanation" to "Destructive database operations are strictly forbidden."
    - If the user asks about tables or columns that DO NOT exist in the provided schema, set "sql_query" to "FORBIDDEN_SCHEMA_ERROR" and "sql_explanation" to "The requested tables or columns do not exist in the connected database schema."
-4. Use valid table and column names as specified in the schema below.
+5. Use valid table and column names as specified in the schema below.
 
 DATABASE SCHEMA:
 {{schema}}"""),
