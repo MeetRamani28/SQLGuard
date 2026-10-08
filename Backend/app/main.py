@@ -40,7 +40,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. OWASP Top 10 Security Headers Middleware
+# 2. Gzip Compression Middleware (Reduces HTTP response bandwidth consumption by 70-80%)
+from fastapi.middleware.gzip import GZipMiddleware
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+# 3. OWASP Top 10 Security Headers Middleware
 app.add_middleware(OWASPResponseHeadersMiddleware)
 
 @app.exception_handler(Exception)
