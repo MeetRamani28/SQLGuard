@@ -440,13 +440,16 @@ async def generate_data_narrative(request: NarrativeRequest):
     narrative += "Data governance checks verified PII redaction and AST read-only safety."
     return {"narrative": narrative}
 
-TRANSLATION_CACHE = {}
+TRANSLATION_CACHE: Dict[Tuple[str, str], str] = {}
 
 @app.post("/api/v1/explain-translation")
 async def translate_explanation_language(request: TranslateExplanationRequest):
     """
     Description: Translates business insights & SQL explanation into Gujarati or Hindi with instant caching & fast-path matching.
     """
+    if len(TRANSLATION_CACHE) > 500:
+        TRANSLATION_CACHE.clear()
+
     exp_text = request.explanation.strip()
     target_lang = request.target_language
     cache_key = (exp_text, target_lang)
