@@ -223,9 +223,10 @@ async def render_keep_alive_background_loop():
     every 10 minutes (600s) to prevent Render free-tier instances from entering 15-minute sleep mode.
     """
     await asyncio.sleep(15) # Grace period after app startup
+    render_ext = os.getenv("RENDER_EXTERNAL_URL")
     target_urls = [
-        "https://sqlguard-backend.onrender.com/health",
-        "http://127.0.0.1:8000/health"
+        f"{render_ext}/ping" if render_ext else "https://sqlguard-backend-on1q.onrender.com/ping",
+        "http://127.0.0.1:8000/ping"
     ]
     
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -243,8 +244,17 @@ async def render_keep_alive_background_loop():
 async def start_render_keep_alive_task():
     asyncio.create_task(render_keep_alive_background_loop())
 
+@app.get("/ping")
+@app.head("/ping")
+def ping_check():
+    """Ultra-lightweight endpoint (2 bytes) for cron-job.org uptime monitors."""
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse("OK")
+
 @app.get("/")
+@app.head("/")
 @app.get("/health")
+@app.head("/health")
 @app.get("/api/v1/keep-alive")
 def health_check():
     """
